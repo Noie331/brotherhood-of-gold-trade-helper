@@ -90,7 +90,8 @@ end
 -- sourceOf(recipe): where it comes from (nil when unknown), and the skill needed to learn it.
 -- Without sourceOf there is no source line.
 View.NO_SOURCE = 'No source known'
-function View.CatalogLines(profession, name, sourceOf)
+-- query (optional): only recipes whose name or source contains it (plain text, any case).
+function View.CatalogLines(profession, name, sourceOf, query)
   if not profession or not profession.all or next(profession.all) == nil then
     return { { kind = 'message', text = 'Open ' .. (name or 'a profession') .. ' once to load its recipe list.' } }
   end
@@ -113,8 +114,19 @@ function View.CatalogLines(profession, name, sourceOf)
     if a.name ~= b.name then return (a.name or '') < (b.name or '') end
     return (a.recipeID or 0) < (b.recipeID or 0)
   end)
-  local lines = { { kind = 'header', difficulty = 'medium', text = 'Learned ' .. learned .. ' of ' .. #rows } }
-  for _, r in ipairs(rows) do lines[#lines + 1] = r end
+  local header = { kind = 'header', difficulty = 'medium', text = 'Learned ' .. learned .. ' of ' .. #rows }
+  local lines = { header }
+  local q = query and query:match('^%s*(.-)%s*$') or ''
+  local needle = q:lower()
+  for _, r in ipairs(rows) do
+    if needle == '' or (r.name or ''):lower():find(needle, 1, true) or (r.source or ''):lower():find(needle, 1, true) then
+      lines[#lines + 1] = r
+    end
+  end
+  if needle ~= '' then
+    header.text = header.text .. '  ·  ' .. (#lines - 1) .. ' match "' .. q .. '"'
+    if #lines == 1 then lines[2] = { kind = 'message', text = 'No ' .. (name or '') .. ' recipes match "' .. q .. '".' } end
+  end
   return lines
 end
 

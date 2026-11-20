@@ -13,6 +13,7 @@ local TICK = ' |TInterface\\RaidFrame\\ReadyCheck-Ready:12:12|t'
 local frame, selected, tabButtons, scanBtn, statusText, sortAH, sortVendor, sortEach, sortTotal, sortLabel, box
 local sortCheap, sortLevelAH, sortLevelVendor
 local pickButtons, recipesProf -- Recipes tab: profession picker and the picked profession
+local searchBox, recipesQuery -- Recipes tab: search box and its text
 local ticker
 
 local function M(v) if v == nil then return '-' end return ns.Format.MoneyIcons(v) end
@@ -324,10 +325,11 @@ function ns.Refresh()
     end
   end
   layoutPicker(picks, recipesTab)
+  searchBox:SetShown(recipesTab)
 
   local lines
   if recipesTab then
-    lines = ns.View.CatalogLines(profs[recipesProf], recipesProf, ns.RecipeSourceText)
+    lines = ns.View.CatalogLines(profs[recipesProf], recipesProf, ns.RecipeSourceText, recipesQuery)
   elseif selected == ns.View.FLIP_TAB then
     local data = ns.Auction.RealmData()
     local loading, loaded, total = ns.Auction.PreloadPrices()
@@ -416,6 +418,21 @@ local function build()
   sortCheap:ClearAllPoints(); sortCheap:SetPoint('LEFT', sortLabel, 'RIGHT', 8, 0)
   sortLevelAH:ClearAllPoints(); sortLevelAH:SetPoint('LEFT', sortCheap, 'RIGHT', 80, 0)
   sortLevelVendor:ClearAllPoints(); sortLevelVendor:SetPoint('LEFT', sortLevelAH, 'RIGHT', 80, 0)
+
+  -- Recipes tab search: filters by recipe name or where it comes from, as you type.
+  local ok, sb = pcall(CreateFrame, 'EditBox', nil, frame, 'SearchBoxTemplate')
+  if not ok or not sb then sb = CreateFrame('EditBox', nil, frame, 'InputBoxTemplate') end
+  searchBox = sb
+  searchBox:SetSize(170, 20)
+  searchBox:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -34, -84)
+  searchBox:SetAutoFocus(false)
+  searchBox:HookScript('OnTextChanged', function(self)
+    local text = self:GetText() or ''
+    if text ~= (recipesQuery or '') then recipesQuery = text; ns.Refresh() end
+  end)
+  searchBox:SetScript('OnEscapePressed', function(self) self:SetText(''); self:ClearFocus() end)
+  searchBox:SetScript('OnEnterPressed', function(self) self:ClearFocus() end)
+  searchBox:Hide()
 
   box = CreateFrame('Frame', nil, frame, 'WowScrollBoxList')
   box:SetPoint('TOPLEFT', frame, 'TOPLEFT', 12, -108)
