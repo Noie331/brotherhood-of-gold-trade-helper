@@ -1,0 +1,19 @@
+name: Recipe data report
+description: Paste your /bog export so the next version knows where more recipes come from.
+title: "Data report"
+labels: ["data-report"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        In game, type `/bog export`, press Ctrl+C, and paste below. The report has npc ids, item ids, prices and
+        map positions only: no character, realm or account names. Sending it again later is fine; only your
+        latest report counts.
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      description: The line starting with BOG1
+      render: text
+    validations:
+      required: true
