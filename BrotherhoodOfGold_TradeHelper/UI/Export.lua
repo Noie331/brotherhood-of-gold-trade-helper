@@ -4,7 +4,7 @@ local E = {}
 ns.Export = E
 
 -- Where players paste their report (GitHub issue form "Recipe data report").
-E.URL = 'github.com/neilclifton84-cell/brotherhood-of-gold-trade-helper/issues/new?template=data-report.yml'
+E.URL = 'github.com/Noie331/brotherhood-of-gold-trade-helper/issues/new?template=data-report.yml'
 
 local frame, edit, last
 
