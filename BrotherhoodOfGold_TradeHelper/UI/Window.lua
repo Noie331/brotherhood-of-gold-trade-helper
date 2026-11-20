@@ -14,6 +14,7 @@ local frame, selected, tabButtons, scanBtn, statusText, sortAH, sortVendor, sort
 local sortCheap, sortLevelAH, sortLevelVendor
 local pickButtons, recipesProf -- Recipes tab: profession picker and the picked profession
 local searchBox, recipesQuery -- Recipes tab: search box and its text
+local moneyChecks = {} -- Money Maker: one tick box per profession
 local ticker
 
 local function M(v) if v == nil then return '-' end return ns.Format.MoneyIcons(v) end
@@ -290,6 +291,34 @@ local function layoutPicker(names, show)
   for i = (show and #names or 0) + 1, #pickButtons do pickButtons[i]:Hide() end
 end
 
+-- Money Maker: a tick box per profession under the sort row; unticked ones are hidden (ns.db.ui.moneyHide).
+local function layoutMoneyFilter(names)
+  local x = 12
+  for i, name in ipairs(names) do
+    local c = moneyChecks[i]
+    if not c then
+      c = CreateFrame('CheckButton', nil, frame, 'UICheckButtonTemplate')
+      c:SetSize(22, 22)
+      c.label = c:CreateFontString(nil, 'ARTWORK', 'GameFontHighlightSmall')
+      c.label:SetPoint('LEFT', c, 'RIGHT', 0, 1)
+      c:SetScript('OnClick', function(self)
+        ns.db.ui.moneyHide = ns.db.ui.moneyHide or {}
+        ns.db.ui.moneyHide[self.profName] = (not self:GetChecked()) or nil
+        ns.Refresh()
+      end)
+      moneyChecks[i] = c
+    end
+    c.profName = name
+    c.label:SetText(name)
+    c:SetChecked(not (ns.db.ui.moneyHide and ns.db.ui.moneyHide[name]))
+    c:ClearAllPoints()
+    c:SetPoint('TOPLEFT', frame, 'TOPLEFT', x, -106)
+    x = x + 22 + c.label:GetStringWidth() + 14
+    c:Show()
+  end
+  for i = #names + 1, #moneyChecks do moneyChecks[i]:Hide() end
+end
+
 -- ---------- whole refresh ----------
 function ns.Refresh()
   if not frame or not frame:IsShown() then return end
@@ -326,6 +355,11 @@ function ns.Refresh()
   end
   layoutPicker(picks, recipesTab)
   searchBox:SetShown(recipesTab)
+  local filterNames = money and ns.View.MoneyProfessions(profs) or {}
+  layoutMoneyFilter(filterNames)
+  box:ClearAllPoints()
+  box:SetPoint('TOPLEFT', frame, 'TOPLEFT', 12, #filterNames > 0 and -132 or -108)
+  box:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -30, 12)
 
   local lines
   if recipesTab then
@@ -340,7 +374,7 @@ function ns.Refresh()
       lines = ns.View.FlipLines(data.prices, data.qty, function(id) return ns.Items.SellPrice(id, true) end,
         ns.db.ui.flipSort)
     end
-  elseif money then lines = ns.View.MoneyLines(profs, ns.ctx, ns.db.ui.moneySort)
+  elseif money then lines = ns.View.MoneyLines(profs, ns.ctx, ns.db.ui.moneySort, ns.db.ui.moneyHide)
   else lines = ns.View.ProfessionLines(profs[selected], selected, ns.ctx, ns.db.ui.levelSort) end
   box:SetDataProvider(CreateDataProvider(lines), ScrollBoxConstants.RetainScrollPosition)
   ns.RefreshStatus()
@@ -391,7 +425,7 @@ local function build()
 
   local title = frame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
   title:SetPoint('TOP', frame, 'TOP', 0, -5)
-  title:SetText('Brotherhood of Gold - Trade Helper')
+  title:SetText('Brotherhood of Gold - Trade Helper  |cff9d9d9dv' .. (ns.VERSION or '?') .. '|r')
 
   scanBtn = CreateFrame('Button', nil, frame, 'UIPanelButtonTemplate')
   scanBtn:SetSize(150, 22)

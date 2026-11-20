@@ -202,9 +202,27 @@ function View.ProfessionLines(profession, name, ctx, mode)
   return emit(ns.Sorting.ForLeveling(rows, mode), ctx, true)
 end
 
-function View.MoneyLines(professions, ctx, mode)
-  local rows = {}
-  for key, p in pairs(professions or {}) do rowsOf(p, p.name or key, ctx, rows) end
+-- Professions to tick on Money Maker: the saved ones that have recipes, A-Z.
+function View.MoneyProfessions(professions)
+  local out = {}
+  for key, p in pairs(professions or {}) do
+    if p.recipes and next(p.recipes) ~= nil then out[#out + 1] = p.name or key end
+  end
+  table.sort(out)
+  return out
+end
+
+-- hidden (optional): { [profession name] = true } for professions unticked on Money Maker.
+function View.MoneyLines(professions, ctx, mode, hidden)
+  local rows, any = {}, false
+  for key, p in pairs(professions or {}) do
+    local name = p.name or key
+    if p.recipes and next(p.recipes) ~= nil then any = true end
+    if not (hidden and hidden[name]) then rowsOf(p, name, ctx, rows) end
+  end
+  if #rows == 0 and any and hidden and next(hidden) ~= nil then
+    return { { kind = 'message', text = 'Every profession is unticked. Tick one above to see its recipes.' } }
+  end
   if #rows == 0 then return { { kind = 'message', text = 'No recipes saved yet. Open your professions once.' } } end
   return emit(ns.Sorting.ForMoney(rows, mode), ctx)
 end

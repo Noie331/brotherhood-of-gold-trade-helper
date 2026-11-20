@@ -138,10 +138,10 @@ function R.IsEmpty(rep)
   return next(rep.vendors) == nil and next(rep.drops) == nil and next(rep.trainers) == nil
 end
 
--- One line: 'BOG1 ' .. JSON. Looted counts only for npcs that dropped a recipe item.
-function R.Export(rep, now)
+-- One line: 'BOG1 ' .. JSON. Looted counts only for npcs that dropped a recipe item. addon: the addon's version.
+function R.Export(rep, now, addon)
   local looted = {}
   for id in pairs(rep.drops) do looted[id] = rep.looted[id] end
-  return 'BOG1 ' .. R.JSON({ v = rep.v, id = rep.id, build = rep.build, t = now,
+  return 'BOG1 ' .. R.JSON({ v = rep.v, id = rep.id, build = rep.build, t = now, addon = addon,
     vendors = rep.vendors, drops = rep.drops, looted = looted, trainers = rep.trainers })
 end

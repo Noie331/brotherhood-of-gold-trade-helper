@@ -1,6 +1,10 @@
 -- Start-up: saved data, game constants, price lookups and the /bog command.
 local ADDON, ns = ...
 
+-- The .toc's "## Version:" (one place to bump it).
+local metadata = (C_AddOns and C_AddOns.GetAddOnMetadata) or GetAddOnMetadata
+ns.VERSION = metadata and metadata(ADDON, 'Version') or '?'
+
 local function useEnums()
   if not Enum then return end
   local d = Enum.TradeskillRelativeDifficulty
@@ -25,7 +29,7 @@ local function yes(v) return v and '|cff40c040yes|r' or '|cffff4040no|r' end
 
 local function probe()
   local _, build, _, interface = GetBuildInfo()
-  print('|cffe8c66aTrade Helper probe|r')
+  print('|cffe8c66aTrade Helper v' .. ns.VERSION .. ' probe|r')
   print('  build ' .. tostring(build) .. ', interface ' .. tostring(interface) .. ' (toc says 16001)')
   print('  ProfessionsFrame: ' .. yes(ProfessionsFrame) .. '  TradeSkillFrame: ' .. yes(TradeSkillFrame)
     .. ' (open a profession first)')
@@ -67,7 +71,7 @@ local function export()
       .. (ns.db.record == false and ' Recording is off: /bog record on' or ''))
     return
   end
-  ns.Export.Show(ns.Report.Export(rep, time()))
+  ns.Export.Show(ns.Report.Export(rep, time(), ns.VERSION))
 end
 
 local f = CreateFrame('Frame')
