@@ -19,7 +19,7 @@ To update, delete the old `BrotherhoodOfGold_TradeHelper` folder and unzip the n
 
 - Open a profession, then click the gold tab on the side of the profession window, or type `/bog`.
 - At the auction house, click **Scan AH** for prices (once every 15 minutes).
-- `/bog probe` prints client details - include it when something looks wrong.
+
 
 ## Help fill in where recipes come from
 
