@@ -71,17 +71,25 @@ local function initRow(row, line)
         if shown then GameTooltip:AddLine(' ') else GameTooltip:SetText(self.tip[1]) end
         GameTooltip:AddLine(self.tip[2], 1, 1, 1, true)
       end
-      local where = self.recipeLine and ns.Locate.Lines(self.recipeLine) or {}
+      local where = self.recipeLine and ns.Locate.TipLines(self.recipeLine) or {}
       if #where > 0 then
         GameTooltip:AddLine(' ')
-        for _, l in ipairs(where) do GameTooltip:AddLine(l, 0.9, 0.8, 0.5) end
+        GameTooltip:AddLine('Where to get it', 1, 0.82, 0)
+        for _, t in ipairs(where) do
+          GameTooltip:AddLine(t[1], 0.9, 0.8, 0.5)
+          if t[2] then GameTooltip:AddLine('   ' .. t[2], 0.85, 0.85, 0.85) end
+        end
         GameTooltip:AddLine('Click: map pin on the nearest one', 0.5, 0.8, 0.5)
       end
+      if what then GameTooltip:AddLine('Shift-click: link it in chat', 0.5, 0.8, 0.5) end
       GameTooltip:Show()
     end)
     row:SetScript('OnLeave', function() GameTooltip:Hide() end)
     row:SetScript('OnMouseUp', function(self, button)
-      if button == 'LeftButton' and self.recipeLine then ns.Locate.Show(self.recipeLine) end
+      if button ~= 'LeftButton' then return end
+      local linking = (IsModifiedClick and IsModifiedClick('CHATLINK')) or (IsShiftKeyDown and IsShiftKeyDown())
+      if linking and ns.LinkToChat(self.line) then return end
+      if self.recipeLine then ns.Locate.Show(self.recipeLine) end
     end)
   end
   row.dot:Hide()
@@ -363,7 +371,7 @@ function ns.Refresh()
 
   local lines
   if recipesTab then
-    lines = ns.View.CatalogLines(profs[recipesProf], recipesProf, ns.RecipeSourceText, recipesQuery)
+    lines = ns.View.CatalogLines(profs[recipesProf], recipesProf, ns.RecipeSourceText, recipesQuery, ns.RecipeEffectText)
   elseif selected == ns.View.FLIP_TAB then
     local data = ns.Auction.RealmData()
     local loading, loaded, total = ns.Auction.PreloadPrices()
@@ -453,7 +461,7 @@ local function build()
   sortLevelAH:ClearAllPoints(); sortLevelAH:SetPoint('LEFT', sortCheap, 'RIGHT', 80, 0)
   sortLevelVendor:ClearAllPoints(); sortLevelVendor:SetPoint('LEFT', sortLevelAH, 'RIGHT', 80, 0)
 
-  -- Recipes tab search: filters by recipe name or where it comes from, as you type.
+  -- Recipes tab search: filters by recipe name, materials, where it comes from, or what it does (stats, well fed...).
   local ok, sb = pcall(CreateFrame, 'EditBox', nil, frame, 'SearchBoxTemplate')
   if not ok or not sb then sb = CreateFrame('EditBox', nil, frame, 'InputBoxTemplate') end
   searchBox = sb
@@ -465,6 +473,19 @@ local function build()
     if text ~= (recipesQuery or '') then recipesQuery = text; ns.Refresh() end
   end)
   searchBox:SetScript('OnEscapePressed', function(self) self:SetText(''); self:ClearFocus() end)
+  if searchBox.Instructions then searchBox.Instructions:SetText('Name, material, stat...') end -- grey hint while empty
+  searchBox:HookScript('OnEnter', function(self)
+    GameTooltip:SetOwner(self, 'ANCHOR_BOTTOM')
+    GameTooltip:SetText('Search recipes by')
+    GameTooltip:AddLine('- recipe or item name: "wool cloak"', 1, 1, 1)
+    GameTooltip:AddLine('- material it uses: "wool cloth", "silk"', 1, 1, 1)
+    GameTooltip:AddLine('- stat or effect: "stamina", "armor", "well fed spirit", "restores health"', 1, 1, 1)
+    GameTooltip:AddLine('- enchant: "agility boots"', 1, 1, 1)
+    GameTooltip:AddLine('- where to get it: "vendor", "trainer", a zone or npc name', 1, 1, 1)
+    GameTooltip:AddLine('Every word must match, in any order. Esc clears it.', 0.6, 0.8, 0.6, true)
+    GameTooltip:Show()
+  end)
+  searchBox:HookScript('OnLeave', function() GameTooltip:Hide() end)
   searchBox:SetScript('OnEnterPressed', function(self) self:ClearFocus() end)
   searchBox:Hide()
 

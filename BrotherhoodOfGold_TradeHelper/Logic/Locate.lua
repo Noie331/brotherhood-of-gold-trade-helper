@@ -42,3 +42,41 @@ function L.Instance(map) return INSTANCES[map] end
 function L.Coords(x, y)
   return string.format('%.1f, %.1f', x * 100, y * 100)
 end
+
+-- 8-point compass for an offset east / north.
+local POINTS = { 'E', 'NE', 'N', 'NW', 'W', 'SW', 'S', 'SE' }
+function L.Compass(east, north)
+  local a = math.atan2 and math.atan2(north, east) or math.atan(north, east) -- the game's Lua 5.1 has atan2
+  local i = math.floor(((a / (2 * math.pi)) * 8 + 0.5)) % 8
+  return POINTS[i + 1]
+end
+
+local function thousands(n)
+  local s = tostring(math.floor(n + 0.5))
+  repeat
+    local k
+    s, k = s:gsub('^(%d+)(%d%d%d)', '%1,%2')
+  until k == 0
+  return s
+end
+
+-- '1,240 yd NE'; under 20 yards: 'right here'.
+function L.Away(yards, east, north)
+  if yards < 20 then return 'right here' end
+  return thousands(yards) .. ' yd ' .. L.Compass(east, north)
+end
+
+local FACTION = { A = 'Alliance', H = 'Horde' }
+
+-- Two tooltip lines for a spot: who ('Vendor: Qia (Alliance)', 'Drop: Ogre (2.2%)') and where.
+-- place: { zone, continent, x, y, away } or { instance }, or nil when the spot can't be placed.
+function L.Tip(spot, place)
+  local extra = spot.pct and ((ns.RecipeSource and ns.RecipeSource.Pct(spot.pct) or string.format('%.1f', spot.pct)) .. '%')
+    or FACTION[spot.faction or '']
+  local who = (spot.kind and (spot.kind .. ': ') or '') .. spot.name .. (extra and (' (' .. extra .. ')') or '')
+  if not place then return { who, 'Location unknown' } end
+  if place.instance then return { who, 'Inside ' .. place.instance } end
+  local where = place.zone .. (place.continent and (', ' .. place.continent) or '') .. '  ' .. L.Coords(place.x, place.y)
+  if place.away then where = where .. '  -  ' .. place.away end
+  return { who, where }
+end

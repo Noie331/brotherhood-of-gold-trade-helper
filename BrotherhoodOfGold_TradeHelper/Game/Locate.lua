@@ -79,7 +79,62 @@ local function describe(s)
   return who .. ' - ' .. zoneName(m) .. ' ' .. L.Coords(x, y), m, x, y
 end
 
+-- The continent a zone map is on (nil when the map is a continent itself or unknown).
+local function continentName(uiMap)
+  local info = C_Map.GetMapInfo and C_Map.GetMapInfo(uiMap)
+  if not info or info.mapType == 2 then return nil end
+  for _ = 1, 5 do
+    info = info.parentMapID and C_Map.GetMapInfo(info.parentMapID)
+    if not info then return nil end
+    if info.mapType == 2 then return info.name end
+  end
+  return nil
+end
+
+local function world(uiMap, x, y)
+  if not (C_Map.GetWorldPosFromMapPos and CreateVector2D) then return nil end
+  local ok, cont, p = pcall(C_Map.GetWorldPosFromMapPos, uiMap, CreateVector2D(x, y))
+  if ok and cont and p then return cont, p end
+  return nil
+end
+
+-- '1,240 yd NE' from where you stand to uiMap x, y; nil when not on the same continent.
+local function awayFromYou(m, x, y)
+  local here = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit('player')
+  local hp = here and C_Map.GetPlayerMapPosition and C_Map.GetPlayerMapPosition(here, 'player')
+  if not hp then return nil end
+  local pc, pw = world(here, hp.x, hp.y)
+  local sc, sw = world(m, x, y)
+  if not pc or pc ~= sc then return nil end
+  -- Which world direction is east and north: one small step on your own map.
+  local _, e = world(here, hp.x + 0.01, hp.y)
+  local _, n = world(here, hp.x, hp.y - 0.01)
+  if not e or not n then return nil end
+  local dx, dy = sw.x - pw.x, sw.y - pw.y
+  local ex, ey, nx, ny = e.x - pw.x, e.y - pw.y, n.x - pw.x, n.y - pw.y
+  local el, nl = math.sqrt(ex * ex + ey * ey), math.sqrt(nx * nx + ny * ny)
+  if el == 0 or nl == 0 then return nil end
+  return L.Away(math.sqrt(dx * dx + dy * dy), (dx * ex + dy * ey) / el, (dx * nx + dy * ny) / nl)
+end
+
+local function place(s)
+  local m, x, y = resolve(s)
+  if not m then
+    local inst = s.map and L.Instance(s.map)
+    return inst and { instance = inst } or nil
+  end
+  return { zone = zoneName(m), continent = continentName(m), x = x, y = y, away = awayFromYou(m, x, y) }
+end
+
 local MAX_LINES = 8 -- more than this: "+N more"
+
+-- Recipes-tab hover: { { 'Vendor: Qia (Alliance)', 'Winterspring, Kalimdor  61.2, 37.4  -  1,240 yd NE' }, ... }.
+function L.TipLines(line)
+  local out, spots = {}, spotsFor(line)
+  for i = 1, math.min(#spots, MAX_LINES) do out[i] = L.Tip(spots[i], place(spots[i])) end
+  if #spots > MAX_LINES then out[#out + 1] = { '+' .. (#spots - MAX_LINES) .. ' more' } end
+  return out
+end
 
 -- Tooltip lines: "Vendor Qia - Winterspring 61.2, 37.4" for each npc with a known spot.
 function L.Lines(line)

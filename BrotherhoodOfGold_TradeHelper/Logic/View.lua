@@ -90,8 +90,21 @@ end
 -- sourceOf(recipe): where it comes from (nil when unknown), and the skill needed to learn it.
 -- Without sourceOf there is no source line.
 View.NO_SOURCE = 'No source known'
--- query (optional): only recipes whose name or source contains it (plain text, any case).
-function View.CatalogLines(profession, name, sourceOf, query)
+-- query (optional): only recipes whose name, source or effect contain every word of it (plain text, any case).
+-- effectOf(recipe) (optional): what the crafted item or enchant does (its tooltip text: stats, Use:, well fed...).
+local function matches(r, words, effectOf)
+  local text = ((r.name or '') .. ' | ' .. (r.source or '')):lower()
+  local effect
+  for _, w in ipairs(words) do
+    if not text:find(w, 1, true) then
+      if effect == nil then effect = (effectOf and effectOf(r) or ''):lower() end
+      if not effect:find(w, 1, true) then return false end
+    end
+  end
+  return true
+end
+
+function View.CatalogLines(profession, name, sourceOf, query, effectOf)
   if not profession or not profession.all or next(profession.all) == nil then
     return { { kind = 'message', text = 'Open ' .. (name or 'a profession') .. ' once to load its recipe list.' } }
   end
@@ -117,13 +130,12 @@ function View.CatalogLines(profession, name, sourceOf, query)
   local header = { kind = 'header', difficulty = 'medium', text = 'Learned ' .. learned .. ' of ' .. #rows }
   local lines = { header }
   local q = query and query:match('^%s*(.-)%s*$') or ''
-  local needle = q:lower()
+  local words = {}
+  for w in q:lower():gmatch('%S+') do words[#words + 1] = w end
   for _, r in ipairs(rows) do
-    if needle == '' or (r.name or ''):lower():find(needle, 1, true) or (r.source or ''):lower():find(needle, 1, true) then
-      lines[#lines + 1] = r
-    end
+    if #words == 0 or matches(r, words, effectOf) then lines[#lines + 1] = r end
   end
-  if needle ~= '' then
+  if #words > 0 then
     header.text = header.text .. '  ·  ' .. (#lines - 1) .. ' match "' .. q .. '"'
     if #lines == 1 then lines[2] = { kind = 'message', text = 'No ' .. (name or '') .. ' recipes match "' .. q .. '".' } end
   end

@@ -122,6 +122,7 @@ local function spotsOf(ids, npcs, faction, kind, anyFaction)
       local spot = { kind = kind, name = n[1], map = n[3], x = n[4], y = n[5] }
       if not n[3] then spot.map, spot.uiMap, spot.x, spot.y = nil, n.ui[1], n.ui[2], n.ui[3] end
       if type(item) == 'table' and kind == 'Drop' then spot.pct = item[2] end
+      if kind ~= 'Drop' and (n[2] == 'A' or n[2] == 'H') then spot.faction = n[2] end
       if anyFaction or n[2] == '' or n[2] == faction or not faction then ours[#ours + 1] = spot else theirs[#theirs + 1] = spot end
     end
   end
