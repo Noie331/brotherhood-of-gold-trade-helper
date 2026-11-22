@@ -127,6 +127,11 @@ on another continent show no distance. Dungeon mobs show "Inside <dungeon>".
 
 **Click a recipe** to list every location in chat and put a **map pin with an arrow** on the nearest one.
 
+- The pin goes to your own faction's trainers and vendors, or to neutral ones and drop mobs.
+- It skips the other faction's, even when they're closer.
+- It only points at the other faction when they're the only source.
+- Once you're in the right zone, the pin goes to a place you've visited there yourself.
+
 **Search box** (top right of the Recipes tab). Type and the list narrows as you go; the header says how many match.
 You can search by:
 
