@@ -7,8 +7,14 @@ ns.Locate = L
 
 -- The spot to pin: one you saw on the map you are on; else the nearest data spot on your continent; else the first.
 -- playerMap/px/py: your world map id and server x/y (nil when unknown); playerUiMap: the map you are on.
-function L.Pick(spots, playerMap, px, py, playerUiMap)
+-- faction ('A'|'H', optional): the other faction's trainers and vendors are left out unless they are all there is.
+function L.Pick(spots, playerMap, px, py, playerUiMap, faction)
   if not spots or #spots == 0 then return nil end
+  if faction then
+    local usable = {}
+    for _, s in ipairs(spots) do if not s.faction or s.faction == faction then usable[#usable + 1] = s end end
+    if #usable > 0 then spots = usable end
+  end
   if playerUiMap then
     for _, s in ipairs(spots) do if s.uiMap == playerUiMap then return s end end
   end

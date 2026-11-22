@@ -55,11 +55,13 @@ local function zoneName(uiMap)
 end
 
 -- All spots for a Recipes-tab line: the data file's, then ones you saw that it doesn't list.
+local function myFaction() return ({ Alliance = 'A', Horde = 'H' })[UnitFactionGroup('player') or ''] end
+
 local function spotsFor(line)
   local data = ns.RecipeData
   local entry = data and data.recipes[line.recipeID]
   if not entry then return {} end
-  local faction = ({ Alliance = 'A', Horde = 'H' })[UnitFactionGroup('player') or '']
+  local faction = myFaction()
   local spots = ns.RecipeSource.Spots(entry, data.npcs, faction)
   local listed = {}
   for _, s in ipairs(spots) do listed[s.kind .. s.name] = true end
@@ -155,7 +157,7 @@ function L.Show(line)
   local ok, px, py, _, inst = pcall(UnitPosition, 'player')
   if not ok then px, py, inst = nil, nil, nil end
   local here = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit('player')
-  local pick = L.Pick(spots, inst, px, py, here)
+  local pick = L.Pick(spots, inst, px, py, here, myFaction())
   local text, m, x, y = describe(pick)
   if not m then return end
   if C_Map.CanSetUserWaypointOnMap and C_Map.CanSetUserWaypointOnMap(m) and UiMapPoint then
