@@ -1,7 +1,7 @@
 ## Interface: 16001
 ## Title: Brotherhood of Gold - Trade Helper
 ## Notes: Profession leveling costs and profits
-## Version: 0.1.5
+## Version: 0.1.6
 ## SavedVariables: BoG_DB
 ## SavedVariablesPerCharacter: BoG_CharDB
 
@@ -9,7 +9,6 @@ Logic/Format.lua
 Logic/Pricing.lua
 Logic/Sorting.lua
 Logic/Scan.lua
-Logic/Preload.lua
 Logic/Recipes.lua
 Logic/Sightings.lua
 Logic/RecipeSource.lua

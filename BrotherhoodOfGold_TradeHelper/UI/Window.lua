@@ -10,7 +10,7 @@ local GAP = 10 -- space above each recipe
 local SUB = 14 -- height of a recipe's second (sell prices) line
 local TICK = ' |TInterface\\RaidFrame\\ReadyCheck-Ready:12:12|t'
 
-local frame, selected, tabButtons, scanBtn, statusText, sortAH, sortVendor, sortEach, sortTotal, sortLabel, box
+local frame, selected, tabButtons, scanBtn, statusText, sortAH, sortVendor, sortLabel, box
 local sortCheap, sortLevelAH, sortLevelVendor
 local pickButtons, recipesProf -- Recipes tab: profession picker and the picked profession
 local searchBox, recipesQuery -- Recipes tab: search box and its text
@@ -49,10 +49,6 @@ local function initRow(row, line)
     row.sub:SetJustifyH('LEFT')
     row.sub:SetWidth(400)
     row.sub:SetWordWrap(false)
-    row.sub2 = row:CreateFontString(nil, 'ARTWORK', 'GameFontHighlightSmall') -- under the middle column
-    row.sub2:SetJustifyH('LEFT')
-    row.sub2:SetWidth(220)
-    row.sub2:SetWordWrap(false)
   end
   row:SetAlpha(1)
   row.line = line -- hover shows the item's (or recipe's) own tooltip
@@ -95,7 +91,7 @@ local function initRow(row, line)
   row.dot:Hide()
   row.icon:Hide()
   row.left:SetFontObject('GameFontHighlightSmall')
-  row.mid:SetText(''); row.right:SetText(''); row.sub:SetText(''); row.sub2:SetText('')
+  row.mid:SetText(''); row.right:SetText(''); row.sub:SetText('')
   row.mid:SetWidth(220); row.right:SetWidth(176)
 
   -- Recipe rows: GAP px of space on top, the main line, then a SUB px second line for sell prices.
@@ -116,11 +112,6 @@ local function initRow(row, line)
     else
       y = -GAP / 2
     end
-  elseif line.kind == 'flip' then -- second line sits under the profit, right-aligned
-    y = SUB / 2
-    row.sub:SetPoint('RIGHT', -4, -10)
-    row.sub:SetJustifyH('RIGHT')
-    row.sub2:ClearAllPoints(); row.sub2:SetPoint('LEFT', 192, -10)
   end
   row.dot:ClearAllPoints(); row.dot:SetPoint('LEFT', 4, y)
   row.mid:ClearAllPoints(); row.mid:SetPoint('LEFT', 192, y)
@@ -152,17 +143,6 @@ local function initRow(row, line)
     row.left:SetPoint('LEFT', 18, 0)
     row.left:SetWidth(500)
     row.left:SetText(col(GREY, line.text))
-    return
-  end
-
-  if line.kind == 'flip' then
-    withIcon(ns.Items.Icon(line.itemID), 16, 16)
-    row.left:SetText(ns.Items.Name(line.itemID) or '...')
-    row.mid:SetText(col(GREY, 'AH ') .. M(line.ah) .. col(GREY, '  |  V ') .. M(line.vendor))
-    -- Profit per item (buy at the lowest AH price, sell to a vendor); below it, how many at that price and the total.
-    row.right:SetText(col(GREEN, '+' .. M(line.profit) .. ' each'))
-    row.sub:SetText(col(GREY, 'Available ') .. line.qty .. col(GREY, '  ·  Total ') .. col(GREEN, '+' .. M(line.total)))
-    row.sub2:SetText(col(GREY, 'Total cost ') .. M(line.cost))
     return
   end
 
@@ -226,7 +206,6 @@ end
 local function extent(_, line)
   if line.kind == 'recipe' then return GAP + 20 + SUB end
   if line.kind == 'message' then return 28 end
-  if line.kind == 'flip' then return 20 + SUB end
   if line.kind == 'catalog' then return GAP + 20 + (line.source and 2 * SUB or 0) end
   if line.kind == 'header' then return 26 end
   return 16
@@ -337,19 +316,16 @@ function ns.Refresh()
   if not valid then selected = names[1] end
   layoutTabs(names)
 
-  local money, flip = selected == ns.View.MONEY_TAB, selected == ns.View.FLIP_TAB
+  local money = selected == ns.View.MONEY_TAB
   sortAH:SetShown(money); sortVendor:SetShown(money)
   sortAH:SetChecked(ns.db.ui.moneySort ~= 'vendor')
   sortVendor:SetChecked(ns.db.ui.moneySort == 'vendor')
-  local prof = not money and not flip and selected ~= ns.View.RECIPES_TAB
-  sortLabel:SetShown(money or flip or prof)
+  local prof = not money and selected ~= ns.View.RECIPES_TAB
+  sortLabel:SetShown(money or prof)
   sortCheap:SetShown(prof); sortLevelAH:SetShown(prof); sortLevelVendor:SetShown(prof)
   local ls = ns.db.ui.levelSort
   sortCheap:SetChecked(ls ~= 'ah' and ls ~= 'vendor')
   sortLevelAH:SetChecked(ls == 'ah'); sortLevelVendor:SetChecked(ls == 'vendor')
-  sortEach:SetShown(flip); sortTotal:SetShown(flip)
-  sortEach:SetChecked(ns.db.ui.flipSort ~= 'total')
-  sortTotal:SetChecked(ns.db.ui.flipSort == 'total')
 
   local recipesTab = selected == ns.View.RECIPES_TAB
   local picks = ns.View.CatalogProfessions(profs)
@@ -372,16 +348,6 @@ function ns.Refresh()
   local lines
   if recipesTab then
     lines = ns.View.CatalogLines(profs[recipesProf], recipesProf, ns.RecipeSourceText, recipesQuery, ns.RecipeEffectText)
-  elseif selected == ns.View.FLIP_TAB then
-    local data = ns.Auction.RealmData()
-    local loading, loaded, total = ns.Auction.PreloadPrices()
-    if loading then
-      lines = { { kind = 'message', text = 'Loading item prices... ' .. loaded .. ' / ' .. total } }
-    else
-      -- After a reload, items still loading join when the quiet background load finishes (one refresh).
-      lines = ns.View.FlipLines(data.prices, data.qty, function(id) return ns.Items.SellPrice(id, true) end,
-        ns.db.ui.flipSort)
-    end
   elseif money then lines = ns.View.MoneyLines(profs, ns.ctx, ns.db.ui.moneySort, ns.db.ui.moneyHide)
   else lines = ns.View.ProfessionLines(profs[selected], selected, ns.ctx, ns.db.ui.levelSort) end
   box:SetDataProvider(CreateDataProvider(lines), ScrollBoxConstants.RetainScrollPosition)
@@ -450,10 +416,6 @@ local function build()
   sortVendor = radio('Vendor profit', 170, 'vendor')
   sortAH:ClearAllPoints(); sortAH:SetPoint('LEFT', sortLabel, 'RIGHT', 8, 0)
   sortVendor:ClearAllPoints(); sortVendor:SetPoint('LEFT', sortAH, 'RIGHT', 80, 0)
-  sortEach = radio('Profit each', 70, 'each', 'flipSort')
-  sortTotal = radio('Total profit', 170, 'total', 'flipSort')
-  sortEach:ClearAllPoints(); sortEach:SetPoint('LEFT', sortLabel, 'RIGHT', 8, 0)
-  sortTotal:ClearAllPoints(); sortTotal:SetPoint('LEFT', sortEach, 'RIGHT', 90, 0)
   sortCheap = radio('Cheapest', 70, 'cheapest', 'levelSort')
   sortLevelAH = radio('AH profit', 170, 'ah', 'levelSort')
   sortLevelVendor = radio('Vendor profit', 270, 'vendor', 'levelSort')

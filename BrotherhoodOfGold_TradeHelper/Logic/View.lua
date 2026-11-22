@@ -47,13 +47,13 @@ function View.NoItemNet(e, fmt)
   return View.SideProfit(0, e.cost, e.partial, fmt)
 end
 
--- What to show when hovering a row: { itemID } (crafted item, material, AH Sell item) or { spellID } (the recipe).
+-- What to show when hovering a row: { itemID } (crafted item, material) or { spellID } (the recipe).
 function View.TooltipFor(line)
   if line.kind == 'recipe' then
     if line.outputItemID then return { itemID = line.outputItemID } end
     return line.recipeID and { spellID = line.recipeID } or nil
   end
-  if line.kind == 'reagent' or line.kind == 'flip' then return line.itemID and { itemID = line.itemID } or nil end
+  if line.kind == 'reagent' then return line.itemID and { itemID = line.itemID } or nil end
   if line.kind == 'catalog' then return line.recipeID and { spellID = line.recipeID } or nil end
   return nil
 end
@@ -70,7 +70,6 @@ function View.TabList(trainedNames, savedProfessions)
   table.sort(extra)
   for _, n in ipairs(extra) do out[#out + 1] = n end
   out[#out + 1] = View.MONEY_TAB
-  out[#out + 1] = View.FLIP_TAB
   out[#out + 1] = View.RECIPES_TAB
   return out
 end
@@ -139,38 +138,6 @@ function View.CatalogLines(profession, name, sourceOf, query, effectOf)
     header.text = header.text .. '  ·  ' .. (#lines - 1) .. ' match "' .. q .. '"'
     if #lines == 1 then lines[2] = { kind = 'message', text = 'No ' .. (name or '') .. ' recipes match "' .. q .. '".' } end
   end
-  return lines
-end
-
--- AH Sell: items whose lowest AH unit price is below what a vendor pays.
--- sellPrice(id) returns copper or nil while the item is still loading (those are skipped for now).
--- mode: 'each' (most profit per item first, the default) or 'total' (most profit buying them all first).
-View.FLIP_TAB = 'AH Sell'
-function View.FlipLines(prices, qty, sellPrice, mode)
-  if not prices or next(prices) == nil then
-    return { { kind = 'message', text = 'Scan the AH to find items to buy and sell to a vendor.' } }
-  end
-  qty = qty or {}
-  local lines = {}
-  for id, ah in pairs(prices) do
-    local vendor = sellPrice(id)
-    if vendor and vendor > ah then
-      local n = qty[id] or 1
-      lines[#lines + 1] = { kind = 'flip', itemID = id, ah = ah, vendor = vendor, profit = vendor - ah,
-        qty = n, total = (vendor - ah) * n, cost = ah * n }
-    end
-  end
-  if #lines == 0 then
-    return { { kind = 'message', text = 'Nothing on the AH sells to a vendor for more than it costs right now.' } }
-  end
-  -- The chosen profit first, then the other one, then item id (stable order).
-  local first, second = 'profit', 'total'
-  if mode == 'total' then first, second = 'total', 'profit' end
-  table.sort(lines, function(a, b)
-    if a[first] ~= b[first] then return a[first] > b[first] end
-    if a[second] ~= b[second] then return a[second] > b[second] end
-    return a.itemID < b.itemID
-  end)
   return lines
 end
 

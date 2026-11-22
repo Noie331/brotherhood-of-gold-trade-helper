@@ -14,15 +14,6 @@ local function realmData()
 end
 Auction.RealmData = realmData
 
--- Starts (or reports) loading item data for everything in the last scan. `loud` only right after a
--- new scan. Returns showLoading, loaded, total.
-function Auction.PreloadPrices(loud)
-  local data = realmData()
-  local ids = {}
-  for id in pairs(data.prices or {}) do ids[#ids + 1] = id end
-  return ns.Items.PreloadFor(data.scannedAt or 0, ids, loud)
-end
-
 function Auction.IsOpen() return open end
 function Auction.IsScanning() return scanning end
 function Auction.Progress() return total > 0 and (done * 100 / total) or 0 end
@@ -61,7 +52,6 @@ local function step(from)
     ns.Scan.Finish(realmData(), acc, startedAt, time(), qty)
     scanning, reading, acc, qty = false, false, nil, nil
     print('|cffe8c66aTrade Helper:|r AH scan done, ' .. total .. ' auctions read.')
-    Auction.PreloadPrices(true) -- load item prices for the AH Sell tab, with a loading message
     if ns.Refresh then ns.Refresh() end
   else
     status()
