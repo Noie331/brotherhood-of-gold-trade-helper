@@ -1,7 +1,7 @@
 # Brotherhood of Gold - Trade Helper
 
 A WoW Forever addon for levelling professions: what each recipe costs to craft (AH and vendor prices), what it sells
-for, which recipes make a profit, items on the AH you can sell to a vendor for more, and every recipe of a profession
+for, which recipes make a profit, and every recipe of a profession
 with where to get it (trainer, vendor, drop with drop chance, quest) and a map pin on the nearest one.
 
 Test build - thanks for trying it.
