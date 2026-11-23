@@ -104,6 +104,8 @@ Every recipe of a profession, **learned or not**, lowest skill first. The header
 (e.g. "Learned 84 of 212").
 
 - **Switching profession:** use the buttons under the tabs. A profession appears there after you've opened it once.
+- **Not learned only:** tick this box, under the profession buttons, to hide the recipes you already know. It's
+  handy for finding what's left to learn. It works with the search box, and stays ticked until you untick it.
 - **Each row:** "Name (skill needed)". The second line says where to get the recipe:
   - **Trainer** (or "any of N trainers")
   - **Vendor**, with the price; "(limited)" means limited supply
@@ -122,7 +124,9 @@ Vendor: Qia (Alliance)
 Winterspring, Kalimdor  61.2, 37.4  -  1,240 yd NE
 ```
 
-That's the zone, continent, map coordinates, and how far away it is and which direction from where you stand. Places
+That's the zone, continent, map coordinates, and how far away it is and which direction from where you stand. "(walks a route - may be nearby)" means that NPC patrols. For vendors and trainers that walk a long way (like
+Zixil), clicking the recipe also draws the route on the world map: a yellow line, with orange squares where they
+stop and wait. Places
 on another continent show no distance. Dungeon mobs show "Inside <dungeon>".
 
 **Click a recipe** to list every location in chat and put a **map pin with an arrow** on the nearest one.
@@ -145,6 +149,20 @@ You can search by:
 
 Every word must match, in any order: `well fed spirit` needs both "well fed" and "spirit". **Esc** or the **X**
 clears it. Hover the search box for a reminder. Items the game hasn't loaded yet may show up a moment later.
+
+### Quests
+
+Profession quests, one button per profession you have, including Herbalism, Skinning, Mining and Fishing. You only
+see your own faction's quests and neutral ones.
+
+- **Each row:** "Quest name (level 20, skill 50)", with **Done**, **In quest log** or **Not done** on the right. The
+  header says how many you've done (e.g. "Done 3 of 12"). Done quests are greyed.
+- **Second line:** who starts it, or the object or item that starts it, and "After: ..." when another quest comes
+  first.
+- **Hover** to see what the quest asks for, and where its quest giver stands, with distance and direction.
+- **Click** to list the quest giver in chat and put a map pin on them.
+
+The quest list comes from classic 1.12 data, so a quest that WoW Forever changed or added may be missing or differ.
 
 ---
 
@@ -174,7 +192,9 @@ clears it. Hover the search box for a reminder. Items the game hasn't loaded yet
 The recipe data comes from classic 1.12 data, so some WoW Forever vendors, drops and recipes are missing. You can
 help fill the gaps.
 
-While you play, the addon quietly notes recipe vendors, recipe drops and trainers it doesn't know yet. It saves NPC
+While you play, the addon quietly notes recipe vendors, recipe drops and trainers it doesn't know yet. It also notices when a vendor or trainer it does know is standing somewhere else, more than 100 yards away or in
+another zone. Your hover and map pin then use where you actually saw it, and the move goes into your report so
+everyone's data gets fixed. It saves NPC
 and item ids, prices, drop counts and where you stood. It saves **no character, realm or account names**.
 
 **To send it:**
