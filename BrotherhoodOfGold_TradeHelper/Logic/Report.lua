@@ -5,7 +5,8 @@
 --     vendors  = { [npcID] = { n = name, f = 'A'|'H'|'', m = uiMap, x, y, items = { [itemID] = { p = copper, l = limited, c = 'other cost' } } } },
 --     drops    = { [npcID] = { n, m, x, y, items = { [itemID] = times looted } } },
 --     looted   = { [npcID] = corpses looted },
---     trainers = { [npcID] = { n, f, m, x, y, teach = { ['Profession:Recipe name'] = skill needed } } } }
+--     trainers = { [npcID] = { n, f, m, x, y, teach = { ['Profession:Recipe name'] = skill needed } } },
+--     moved    = { [npcID] = { n, f, m, x, y } } }  (vendors/trainers the data file has standing somewhere else)
 local _, ns = ...
 local R = {}
 ns.Report = R
@@ -65,6 +66,30 @@ function R.Trainer(rep, npc, spot, services)
   end
   if not any then return end
   npcRecord(rep.trainers, npc, spot, true).teach = teach
+end
+
+-- Moved npcs: more than this many yards from the data file's spawn (or on another map) counts as moved.
+R.MOVE_YARDS = 100
+
+-- known: the data file's npc { name, faction, map, x, y } (server coordinates); world: where you stand,
+-- { map, x, y } from UnitPosition. true/false, or nil when it can't tell (no spawn in the file, no position, or
+-- it walks a route, so being far from its spawn is normal).
+function R.IsMoved(known, world)
+  if not known or not known[3] or known.walks or not world or world.map == nil then return nil end
+  if world.map ~= known[3] then return true end
+  local dx, dy = world.x - known[4], world.y - known[5]
+  return dx * dx + dy * dy > R.MOVE_YARDS * R.MOVE_YARDS
+end
+
+-- Saves (moved = true) or clears (false) an npc in the report's moved section; spot = where you saw it.
+function R.Moved(rep, npc, moved, spot)
+  if not rep or not npc or not npc.id or moved == nil then return end
+  rep.moved = rep.moved or {}
+  if moved and spot then
+    rep.moved[npc.id] = { n = npc.name, f = npc.faction or '', m = spot.uiMap, x = spot.x, y = spot.y }
+  elseif not moved then
+    rep.moved[npc.id] = nil
+  end
 end
 
 -- What the data file already knows per recipe item: { [itemID] = { vendors = { [npc] = true }, drops = { [npc] = true } } }.
@@ -135,7 +160,7 @@ function R.JSON(v)
 end
 
 function R.IsEmpty(rep)
-  return next(rep.vendors) == nil and next(rep.drops) == nil and next(rep.trainers) == nil
+  return next(rep.vendors) == nil and next(rep.drops) == nil and next(rep.trainers) == nil and next(rep.moved or {}) == nil
 end
 
 -- One line: 'BOG1 ' .. JSON. Looted counts only for npcs that dropped a recipe item. addon: the addon's version.
@@ -143,5 +168,5 @@ function R.Export(rep, now, addon)
   local looted = {}
   for id in pairs(rep.drops) do looted[id] = rep.looted[id] end
   return 'BOG1 ' .. R.JSON({ v = rep.v, id = rep.id, build = rep.build, t = now, addon = addon,
-    vendors = rep.vendors, drops = rep.drops, looted = looted, trainers = rep.trainers })
+    vendors = rep.vendors, drops = rep.drops, looted = looted, trainers = rep.trainers, moved = rep.moved })
 end

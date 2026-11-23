@@ -49,6 +49,17 @@ local function resolve(s)
   return nil
 end
 
+-- Server x, y on world map `map` as u, v (0-1, can be outside) on uiMap `uiMap`, or nil.
+function L.WorldToMap(map, x, y, uiMap)
+  if not (C_Map and C_Map.GetMapPosFromWorldPos and CreateVector2D) then return nil end
+  calibrate()
+  for _, o in ipairs(swap == nil and { false, true } or { swap }) do
+    local p = worldPos(map, vec(x, y, o), uiMap)
+    if p and (swap ~= nil or onMap(p)) then return p.x, p.y end
+  end
+  return nil
+end
+
 local function zoneName(uiMap)
   local info = C_Map.GetMapInfo and C_Map.GetMapInfo(uiMap)
   return info and info.name or ('map ' .. uiMap)
@@ -59,10 +70,17 @@ local function myFaction() return ({ Alliance = 'A', Horde = 'H' })[UnitFactionG
 
 local function spotsFor(line)
   local data = ns.RecipeData
+  if line.questID then
+    local spots = ns.RecipeSource.QuestSpots(data and data.quests and data.quests[line.questID], data and data.npcs or {},
+      myFaction())
+    L.ApplyMoved(spots, ns.db and ns.db.moved)
+    return spots
+  end
   local entry = data and data.recipes[line.recipeID]
   if not entry then return {} end
   local faction = myFaction()
   local spots = ns.RecipeSource.Spots(entry, data.npcs, faction)
+  L.ApplyMoved(spots, ns.db and ns.db.moved)
   local listed = {}
   for _, s in ipairs(spots) do listed[s.kind .. s.name] = true end
   for _, s in ipairs(ns.Sightings.Spots(ns.db and ns.db.recipeItems or {}, entry.items)) do
@@ -151,9 +169,14 @@ local function say(msg) print('|cffe8c66aTrade Helper|r ' .. msg) end
 -- Click on a recipe: list where to get it in chat and pin the nearest spot on the map.
 function L.Show(line)
   local spots = spotsFor(line)
-  if #spots == 0 then say('No trainer, vendor or drop location known for ' .. (line.name or 'this recipe') .. '.'); return end
+  local walking = L.Walking(spots)
+  if L.SetRoutes then L.SetRoutes(walking) end
+  if #spots == 0 then say('No location known for ' .. (line.name or 'this recipe') .. '.'); return end
   say((line.name or 'Recipe') .. ':')
   for _, text in ipairs(L.Lines(line)) do say('  ' .. text) end
+  if L.HasRoute and L.HasRoute(walking) then
+    say('  Walking route drawn on the world map (yellow line; orange squares: where they stop and wait).')
+  end
   local ok, px, py, _, inst = pcall(UnitPosition, 'player')
   if not ok then px, py, inst = nil, nil, nil end
   local here = C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit('player')

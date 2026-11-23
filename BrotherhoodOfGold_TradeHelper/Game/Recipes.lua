@@ -41,14 +41,15 @@ function Recipes.SaveOpen()
 end
 
 -- Trained profession names: primaries first, then the secondary ones, in GetProfessions order.
-function Recipes.TrainedNames()
+-- all: also the ones with no recipes (Herbalism, Skinning, Fishing), for the Quests tab.
+function Recipes.TrainedNames(all)
   local out = {}
   local idx = { GetProfessions() }
   for i = 1, 8 do
     local slot = idx[i]
     if slot then
       local name, _, _, _, _, _, skillLine = GetProfessionInfo(slot)
-      if name and not ns.View.NO_RECIPE_SKILL_LINES[skillLine] then out[#out + 1] = name end
+      if name and (all or not ns.View.NO_RECIPE_SKILL_LINES[skillLine]) then out[#out + 1] = name end
     end
   end
   return out

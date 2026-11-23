@@ -13,7 +13,9 @@ local TICK = ' |TInterface\\RaidFrame\\ReadyCheck-Ready:12:12|t'
 local frame, selected, tabButtons, scanBtn, statusText, sortAH, sortVendor, sortLabel, box
 local sortCheap, sortLevelAH, sortLevelVendor
 local pickButtons, recipesProf -- Recipes tab: profession picker and the picked profession
+local questsProf -- Quests tab: the picked profession (same picker buttons)
 local searchBox, recipesQuery -- Recipes tab: search box and its text
+local unlearnedCheck -- Recipes tab: 'Not learned only' tick box (ns.db.ui.recipesUnlearned)
 local moneyChecks = {} -- Money Maker: one tick box per profession
 local ticker
 
@@ -70,12 +72,13 @@ local function initRow(row, line)
       local where = self.recipeLine and ns.Locate.TipLines(self.recipeLine) or {}
       if #where > 0 then
         GameTooltip:AddLine(' ')
-        GameTooltip:AddLine('Where to get it', 1, 0.82, 0)
+        GameTooltip:AddLine(self.recipeLine.questID and 'Where it starts' or 'Where to get it', 1, 0.82, 0)
         for _, t in ipairs(where) do
           GameTooltip:AddLine(t[1], 0.9, 0.8, 0.5)
           if t[2] then GameTooltip:AddLine('   ' .. t[2], 0.85, 0.85, 0.85) end
         end
-        GameTooltip:AddLine('Click: map pin on the nearest one', 0.5, 0.8, 0.5)
+        GameTooltip:AddLine(self.recipeLine.questID and 'Click: map pin on the quest giver'
+          or 'Click: map pin on the nearest one', 0.5, 0.8, 0.5)
       end
       if what then GameTooltip:AddLine('Shift-click: link it in chat', 0.5, 0.8, 0.5) end
       GameTooltip:Show()
@@ -102,7 +105,7 @@ local function initRow(row, line)
   if line.kind == 'recipe' then
     y = (SUB - GAP) / 2
     row.sub:SetPoint('LEFT', 36, -(GAP + 20) / 2)
-  elseif line.kind == 'catalog' then -- GAP on top, the name line, then up to two lines of where to get it
+  elseif line.kind == 'catalog' or line.kind == 'quest' then -- GAP on top, the name line, then up to two lines of where to get it
     if line.source then
       y = (2 * SUB - GAP) / 2
       row.sub:SetPoint('TOPLEFT', row, 'LEFT', 36, y - 10)
@@ -143,6 +146,27 @@ local function initRow(row, line)
     row.left:SetPoint('LEFT', 18, 0)
     row.left:SetWidth(500)
     row.left:SetText(col(GREY, line.text))
+    return
+  end
+
+  if line.kind == 'quest' then
+    local done = line.status == 'done'
+    withIcon(done and 'Interface\\GossipFrame\\ActiveQuestIcon' or 'Interface\\GossipFrame\\AvailableQuestIcon', 16, 16)
+    row.left:SetFontObject('GameFontNormalSmall')
+    row.left:SetWidth(400)
+    local name = line.name or '?'
+    if done then name = col(GREY, name) end
+    local need = 'level ' .. (line.level or '?') .. (line.req and (', skill ' .. line.req) or '')
+    row.left:SetText(name .. col(GREY, ' (' .. need .. ')'))
+    if done then row.right:SetText(col(GREEN, 'Done') .. TICK)
+    elseif line.status == 'active' then row.right:SetText(col('ffff00', 'In quest log'))
+    else row.right:SetText(col(GREY, 'Not done')) end
+    row.sub:SetText(col(GREY, line.source or ''))
+    local tip = (line.obj and line.obj ~= '' and (line.obj .. '\n\n') or '') .. (line.source or '')
+      .. '\nNeeds level ' .. (line.min or '?') .. (line.req and (' and ' .. line.req .. ' skill') or '')
+    row.tip = { line.name or '', tip }
+    row.recipeLine = line
+    if done then row:SetAlpha(0.7) end
     return
   end
 
@@ -207,6 +231,7 @@ local function extent(_, line)
   if line.kind == 'recipe' then return GAP + 20 + SUB end
   if line.kind == 'message' then return 28 end
   if line.kind == 'catalog' then return GAP + 20 + (line.source and 2 * SUB or 0) end
+  if line.kind == 'quest' then return GAP + 20 + 2 * SUB end
   if line.kind == 'header' then return 26 end
   return 16
 end
@@ -237,6 +262,7 @@ local function layoutTabs(names)
       b:SetHeight(22)
       b:SetScript('OnClick', function(self)
         if self.tabName == ns.View.RECIPES_TAB and ns.chardb.professions[selected] then recipesProf = selected end
+        if self.tabName == ns.View.QUESTS_TAB and ns.chardb.professions[selected] then questsProf = selected end
         selected = self.tabName
         ns.Refresh()
       end)
@@ -254,8 +280,8 @@ local function layoutTabs(names)
   for i = #names + 1, #tabButtons do tabButtons[i]:Hide() end
 end
 
--- Recipes tab: one button per profession with a saved full list.
-local function layoutPicker(names, show)
+-- Recipes tab: one button per profession with a saved full list. Quests tab: one per profession with quests.
+local function layoutPicker(names, show, current)
   pickButtons = pickButtons or {}
   local x = 12
   for i, name in ipairs(show and names or {}) do
@@ -263,7 +289,10 @@ local function layoutPicker(names, show)
     if not b then
       b = CreateFrame('Button', nil, frame, 'UIPanelButtonTemplate')
       b:SetHeight(20)
-      b:SetScript('OnClick', function(self) recipesProf = self.profName; ns.Refresh() end)
+      b:SetScript('OnClick', function(self)
+        if selected == ns.View.QUESTS_TAB then questsProf = self.profName else recipesProf = self.profName end
+        ns.Refresh()
+      end)
       pickButtons[i] = b
     end
     b.profName = name
@@ -272,7 +301,7 @@ local function layoutPicker(names, show)
     b:ClearAllPoints()
     b:SetPoint('TOPLEFT', frame, 'TOPLEFT', x, -84)
     x = x + b:GetWidth() + 4
-    if name == recipesProf then b:LockHighlight() else b:UnlockHighlight() end
+    if name == current then b:LockHighlight() else b:UnlockHighlight() end
     b:Show()
   end
   for i = (show and #names or 0) + 1, #pickButtons do pickButtons[i]:Hide() end
@@ -320,7 +349,7 @@ function ns.Refresh()
   sortAH:SetShown(money); sortVendor:SetShown(money)
   sortAH:SetChecked(ns.db.ui.moneySort ~= 'vendor')
   sortVendor:SetChecked(ns.db.ui.moneySort == 'vendor')
-  local prof = not money and selected ~= ns.View.RECIPES_TAB
+  local prof = not money and selected ~= ns.View.RECIPES_TAB and selected ~= ns.View.QUESTS_TAB
   sortLabel:SetShown(money or prof)
   sortCheap:SetShown(prof); sortLevelAH:SetShown(prof); sortLevelVendor:SetShown(prof)
   local ls = ns.db.ui.levelSort
@@ -337,17 +366,34 @@ function ns.Refresh()
       recipesProf = (open and profs[open] and profs[open].all) and open or picks[1]
     end
   end
-  layoutPicker(picks, recipesTab)
+  local questsTab = selected == ns.View.QUESTS_TAB
+  if questsTab then
+    picks = ns.Quests.Professions()
+    local ok = false
+    for _, n in ipairs(picks) do if n == questsProf then ok = true end end
+    if not ok then
+      local open = ns.Recipes.CurrentName()
+      questsProf = picks[1]
+      for _, n in ipairs(picks) do if n == open then questsProf = open end end
+    end
+  end
+  layoutPicker(picks, recipesTab or questsTab, questsTab and questsProf or recipesProf)
   searchBox:SetShown(recipesTab)
+  unlearnedCheck:SetShown(recipesTab)
+  unlearnedCheck:SetChecked(ns.db.ui.recipesUnlearned and true or false)
   local filterNames = money and ns.View.MoneyProfessions(profs) or {}
   layoutMoneyFilter(filterNames)
   box:ClearAllPoints()
-  box:SetPoint('TOPLEFT', frame, 'TOPLEFT', 12, #filterNames > 0 and -132 or -108)
+  box:SetPoint('TOPLEFT', frame, 'TOPLEFT', 12, (#filterNames > 0 or recipesTab) and -132 or -108)
   box:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -30, 12)
 
   local lines
-  if recipesTab then
-    lines = ns.View.CatalogLines(profs[recipesProf], recipesProf, ns.RecipeSourceText, recipesQuery, ns.RecipeEffectText)
+  if questsTab then
+    lines = questsProf and ns.Quests.Lines(questsProf)
+      or { { kind = 'message', text = 'None of your professions has quests in the data.' } }
+  elseif recipesTab then
+    lines = ns.View.CatalogLines(profs[recipesProf], recipesProf, ns.RecipeSourceText, recipesQuery, ns.RecipeEffectText,
+      ns.db.ui.recipesUnlearned)
   elseif money then lines = ns.View.MoneyLines(profs, ns.ctx, ns.db.ui.moneySort, ns.db.ui.moneyHide)
   else lines = ns.View.ProfessionLines(profs[selected], selected, ns.ctx, ns.db.ui.levelSort) end
   box:SetDataProvider(CreateDataProvider(lines), ScrollBoxConstants.RetainScrollPosition)
@@ -450,6 +496,19 @@ local function build()
   searchBox:HookScript('OnLeave', function() GameTooltip:Hide() end)
   searchBox:SetScript('OnEnterPressed', function(self) self:ClearFocus() end)
   searchBox:Hide()
+
+  -- Recipes tab filter: only the recipes you don't know yet (remembered).
+  unlearnedCheck = CreateFrame('CheckButton', nil, frame, 'UICheckButtonTemplate')
+  unlearnedCheck:SetSize(22, 22)
+  unlearnedCheck:SetPoint('TOPLEFT', frame, 'TOPLEFT', 12, -106)
+  unlearnedCheck.label = unlearnedCheck:CreateFontString(nil, 'ARTWORK', 'GameFontHighlightSmall')
+  unlearnedCheck.label:SetPoint('LEFT', unlearnedCheck, 'RIGHT', 0, 1)
+  unlearnedCheck.label:SetText('Not learned only')
+  unlearnedCheck:SetScript('OnClick', function(self)
+    ns.db.ui.recipesUnlearned = self:GetChecked() and true or nil
+    ns.Refresh()
+  end)
+  unlearnedCheck:Hide()
 
   box = CreateFrame('Frame', nil, frame, 'WowScrollBoxList')
   box:SetPoint('TOPLEFT', frame, 'TOPLEFT', 12, -108)

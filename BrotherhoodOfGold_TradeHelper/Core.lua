@@ -45,6 +45,7 @@ local function probe()
   for _ in pairs(ns.db.recipeItems or {}) do seen = seen + 1 end
   print('  recipe items seen at vendors or in loot: ' .. seen)
   print('  vendor location test: ' .. ns.Locate.ProbeText() .. ' (expect Winterspring about 61, 37)')
+  if ns.Locate.RouteProbe then print('  walking routes: ' .. ns.Locate.RouteProbe()) end
   -- Recipes tab check: does the client list unlearned recipes, and give their grey level?
   if T and T.GetAllRecipeIDs then
     local learned, unlearned, withGrey, inFile = 0, 0, 0, 0

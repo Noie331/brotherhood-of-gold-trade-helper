@@ -71,7 +71,41 @@ function View.TabList(trainedNames, savedProfessions)
   for _, n in ipairs(extra) do out[#out + 1] = n end
   out[#out + 1] = View.MONEY_TAB
   out[#out + 1] = View.RECIPES_TAB
+  out[#out + 1] = View.QUESTS_TAB
   return out
+end
+
+-- Quests tab: profession quests (data file quests table), one sub tab per profession you have.
+View.QUESTS_TAB = 'Quests'
+
+function View.QuestProfessions(trainedNames, quests)
+  local has = {}
+  for _, q in pairs(quests or {}) do has[q.prof] = true end
+  local out = {}
+  for _, n in ipairs(trainedNames or {}) do if has[n] then out[#out + 1] = n end end
+  return out
+end
+
+-- statusOf(questID): 'done', 'active' (in your quest log) or nil. sourceOf(quest): where it starts (text).
+function View.QuestLines(quests, profession, faction, statusOf, sourceOf)
+  local rows, done = {}, 0
+  for id, q in pairs(quests or {}) do
+    if q.prof == profession and (q.side == '' or not faction or q.side == faction) then
+      local line = { kind = 'quest', questID = id, name = q.title, req = q.req, level = q.level, min = q.min,
+        status = statusOf(id), source = sourceOf(q), obj = q.obj }
+      if line.status == 'done' then done = done + 1 end
+      rows[#rows + 1] = line
+    end
+  end
+  if #rows == 0 then return { { kind = 'message', text = 'No ' .. (profession or '') .. ' quests known.' } } end
+  table.sort(rows, function(a, b)
+    if (a.req or 0) ~= (b.req or 0) then return (a.req or 0) < (b.req or 0) end
+    if a.level ~= b.level then return a.level < b.level end
+    return a.questID < b.questID
+  end)
+  local lines = { { kind = 'header', difficulty = 'medium', text = 'Done ' .. done .. ' of ' .. #rows } }
+  for _, r in ipairs(rows) do lines[#lines + 1] = r end
+  return lines
 end
 
 -- Recipes tab: every recipe of one profession, learned or not, by the skill needed to learn it.
@@ -103,7 +137,8 @@ local function matches(r, words, effectOf)
   return true
 end
 
-function View.CatalogLines(profession, name, sourceOf, query, effectOf)
+-- unlearnedOnly (optional): only recipes you don't know yet.
+function View.CatalogLines(profession, name, sourceOf, query, effectOf, unlearnedOnly)
   if not profession or not profession.all or next(profession.all) == nil then
     return { { kind = 'message', text = 'Open ' .. (name or 'a profession') .. ' once to load its recipe list.' } }
   end
@@ -132,11 +167,17 @@ function View.CatalogLines(profession, name, sourceOf, query, effectOf)
   local words = {}
   for w in q:lower():gmatch('%S+') do words[#words + 1] = w end
   for _, r in ipairs(rows) do
-    if #words == 0 or matches(r, words, effectOf) then lines[#lines + 1] = r end
+    if not (unlearnedOnly and r.learned) and (#words == 0 or matches(r, words, effectOf)) then lines[#lines + 1] = r end
   end
+  local shown = #lines - 1
   if #words > 0 then
-    header.text = header.text .. '  ·  ' .. (#lines - 1) .. ' match "' .. q .. '"'
-    if #lines == 1 then lines[2] = { kind = 'message', text = 'No ' .. (name or '') .. ' recipes match "' .. q .. '".' } end
+    header.text = header.text .. '  ·  ' .. shown .. (unlearnedOnly and ' not learned' or '') .. ' match "' .. q .. '"'
+    if shown == 0 then
+      lines[2] = { kind = 'message', text = 'No ' .. (unlearnedOnly and 'not-learned ' or '') .. (name or '') .. ' recipes match "' .. q .. '".' }
+    end
+  elseif unlearnedOnly then
+    header.text = header.text .. '  ·  ' .. shown .. ' not learned'
+    if shown == 0 then lines[2] = { kind = 'message', text = 'You know every ' .. (name or '') .. ' recipe.' } end
   end
   return lines
 end

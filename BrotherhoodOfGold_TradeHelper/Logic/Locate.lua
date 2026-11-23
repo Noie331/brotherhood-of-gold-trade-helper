@@ -32,6 +32,52 @@ function L.Pick(spots, playerMap, px, py, playerUiMap, faction)
   return spots[1]
 end
 
+-- Npcs you saw standing somewhere other than the data file says ({ [npcID] = { uiMap, x, y } }): use where you saw them.
+function L.ApplyMoved(spots, moved)
+  if not moved then return end
+  for _, s in ipairs(spots) do
+    local m = s.npc and moved[s.npc]
+    if m then s.map, s.uiMap, s.x, s.y, s.moved = nil, m.uiMap, m.x, m.y, true end
+  end
+end
+
+-- Route of a walking npc drawn on the map being viewed. route: flat { x, y, wait seconds, ... } (server coordinates);
+-- toMap(x, y) gives that map's u, v (0-1) or nil. Returns { segments = { { u1, v1, u2, v2 } }, stops = { { u, v, wait } } }
+-- with each segment and stop once (routes walk out and back), or nil when none of it is on this map.
+local function onThisMap(u, v) return u and v and u >= -0.1 and u <= 1.1 and v >= -0.1 and v <= 1.1 end
+
+function L.RouteSegments(route, toMap)
+  if not route then return nil end
+  local pts = {}
+  for i = 1, #route - 2, 3 do
+    local u, v = toMap(route[i], route[i + 1])
+    pts[#pts + 1] = { u = u, v = v, wait = route[i + 2], ok = onThisMap(u, v) }
+  end
+  local segs, stops, seen = {}, {}, {}
+  local function key(a, b) return string.format('%.4f,%.4f', a, b) end
+  for i, p in ipairs(pts) do
+    local q = pts[i + 1]
+    if q and p.ok and q.ok then
+      local a, b = key(p.u, p.v), key(q.u, q.v)
+      local k = a < b and (a .. '|' .. b) or (b .. '|' .. a)
+      if a ~= b and not seen[k] then seen[k] = true; segs[#segs + 1] = { p.u, p.v, q.u, q.v } end
+    end
+    if p.ok and p.wait and p.wait > 0 and not seen[key(p.u, p.v)] then
+      seen[key(p.u, p.v)] = true
+      stops[#stops + 1] = { p.u, p.v, p.wait }
+    end
+  end
+  if #segs == 0 and #stops == 0 then return nil end
+  return { segments = segs, stops = stops }
+end
+
+-- Npc ids of the spots that walk a route.
+function L.Walking(spots)
+  local out = {}
+  for _, s in ipairs(spots or {}) do if s.walks and s.npc then out[#out + 1] = s.npc end end
+  return out
+end
+
 -- Classic dungeons and raids (world map id -> name); their spawns have no zone coordinates.
 local INSTANCES = {
   [33] = 'Shadowfang Keep', [34] = 'The Stockade', [36] = 'The Deadmines', [43] = 'Wailing Caverns',
@@ -84,5 +130,7 @@ function L.Tip(spot, place)
   if place.instance then return { who, 'Inside ' .. place.instance } end
   local where = place.zone .. (place.continent and (', ' .. place.continent) or '') .. '  ' .. L.Coords(place.x, place.y)
   if place.away then where = where .. '  -  ' .. place.away end
+  if spot.moved then where = where .. '  (moved - where you saw it)' end
+  if spot.walks and not spot.moved then where = where .. '  (walks a route - may be nearby)' end
   return { who, where }
 end

@@ -1,4 +1,5 @@
--- Data report: records vendors, drops and trainers the recipe data file doesn't know yet (Logic/Report.lua).
+-- Data report: records vendors, drops and trainers the recipe data file doesn't know yet, and known vendors and
+-- trainers that stand somewhere else now (Logic/Report.lua).
 -- On unless /bog record off. /bog export shows it to copy into a data report.
 local _, ns = ...
 local R = ns.Report
@@ -40,6 +41,18 @@ local function npcByGUID(guid)
   return { id = id }
 end
 
+-- A vendor or trainer standing somewhere other than the data file says: remember where you saw it (your own
+-- hover and map pin use it, even with recording off) and put it in the report. Seen back in place: forget it.
+local function checkMoved(npc, spot)
+  local known = npc and ns.RecipeData and ns.RecipeData.npcs[npc.id]
+  local ok, a, b, _, inst = pcall(UnitPosition, 'player')
+  local moved = R.IsMoved(known, ok and a and { map = inst, x = a, y = b } or nil)
+  if moved == nil or not ns.db then return end
+  ns.db.moved = ns.db.moved or {}
+  ns.db.moved[npc.id] = (moved and spot) and { uiMap = spot.uiMap, x = spot.x, y = spot.y } or nil
+  R.Moved(R.Current(), npc, moved, spot)
+end
+
 local function otherCost(i)
   if not GetMerchantItemCostInfo then return nil end
   local parts = {}
@@ -52,6 +65,8 @@ local function otherCost(i)
 end
 
 local function merchant()
+  local npc, here = npcFrom('npc'), ns.Locate.Here and ns.Locate.Here()
+  checkMoved(npc, here)
   local rep = R.Current()
   if not rep then return end
   local items = {}
@@ -69,7 +84,7 @@ local function merchant()
       items[#items + 1] = { id = id, price = price, limited = available ~= nil and available ~= -1, cost = otherCost(i) }
     end
   end
-  R.Vendor(rep, npcFrom('npc'), ns.Locate.Here and ns.Locate.Here(), items, vendorNews)
+  R.Vendor(rep, npc, here, items, vendorNews)
 end
 
 local corpses = {} -- GUIDs looted this session: each corpse counts once
@@ -98,6 +113,8 @@ local function loot()
 end
 
 local function trainer()
+  local npc, here = npcFrom('npc'), ns.Locate.Here and ns.Locate.Here()
+  checkMoved(npc, here)
   local rep = R.Current()
   if not rep or not GetNumTrainerServices then return end
   local services = {}
@@ -108,7 +125,7 @@ local function trainer()
       services[#services + 1] = { name = name, prof = prof, skill = skill }
     end
   end
-  R.Trainer(rep, npcFrom('npc'), ns.Locate.Here and ns.Locate.Here(), services)
+  R.Trainer(rep, npc, here, services)
 end
 
 local f = CreateFrame('Frame')

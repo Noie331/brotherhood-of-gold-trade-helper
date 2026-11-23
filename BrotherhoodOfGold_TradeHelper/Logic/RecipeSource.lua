@@ -117,11 +117,13 @@ end
 local function spotsOf(ids, npcs, faction, kind, anyFaction)
   local ours, theirs = {}, {}
   for _, item in ipairs(ids or {}) do
-    local n = npcs[type(item) == 'table' and item[1] or item]
+    local id = type(item) == 'table' and item[1] or item
+    local n = npcs[id]
     if n and (n[3] or n.ui) then
-      local spot = { kind = kind, name = n[1], map = n[3], x = n[4], y = n[5] }
+      local spot = { kind = kind, npc = id, name = n[1], map = n[3], x = n[4], y = n[5] }
       if not n[3] then spot.map, spot.uiMap, spot.x, spot.y = nil, n.ui[1], n.ui[2], n.ui[3] end
       if type(item) == 'table' and kind == 'Drop' then spot.pct = item[2] end
+      if n.walks then spot.walks = true end
       if kind ~= 'Drop' and (n[2] == 'A' or n[2] == 'H') then spot.faction = n[2] end
       if anyFaction or n[2] == '' or n[2] == faction or not faction then ours[#ours + 1] = spot else theirs[#theirs + 1] = spot end
     end
@@ -150,4 +152,21 @@ function RS.VendorNames(entry, npcs)
   local out = {}
   for _, v in ipairs(entry and entry.vendors or {}) do out[npcName(npcs or {}, v[1])] = true end
   return out
+end
+
+-- Profession quests (data file quests table). Who or what starts one, and the quest to do before it.
+function RS.QuestText(q, npcs, faction)
+  local parts = {}
+  local list, only = byFaction(q.givers, npcs, faction)
+  if list then parts[#parts + 1] = (only and ('Starts (' .. only .. ' only)') or 'Starts') .. ': ' .. names(list)
+  elseif q.objects then parts[#parts + 1] = 'Starts at: ' .. names(q.objects)
+  elseif q.item then parts[#parts + 1] = 'Starts from item: ' .. q.item
+  else parts[#parts + 1] = 'Start unknown' end
+  if q.after then parts[#parts + 1] = 'After: ' .. q.after end
+  return table.concat(parts, '  ·  ')
+end
+
+-- Where a quest's givers stand (same spots as RS.Spots, kind 'Quest giver').
+function RS.QuestSpots(q, npcs, faction)
+  return q and spotsOf(q.givers, npcs, faction, 'Quest giver') or {}
 end
