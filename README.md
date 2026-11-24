@@ -182,7 +182,7 @@ The quest list comes from classic 1.12 data, so a quest that WoW Forever changed
 | Command | Does |
 |---|---|
 | `/bog` | open / close the helper |
-| `/bog export` | show your recipe data report, ready to copy (see below) |
+| `/bog export` | show your recipe data report, ready to copy (see below); same as the **Send data report** button |
 | `/bog record off` | stop recording recipe data |
 | `/bog record on` | start recording again (it's on by default) |
 | `/bog probe` | print details about your game client, for bug reports |
@@ -201,13 +201,14 @@ and item ids, prices, drop counts and where you stood. It saves **no character, 
 
 **To send it:**
 
-1. In game, type `/bog export`. A window opens with one long line starting `BOG1 {`, already selected.
+1. In the helper, click **Send data report** (top right), or type `/bog export`. A window opens with one long line
+   starting `BOG1 {`, already selected.
 2. Press **Ctrl+C** to copy it.
-3. Open **[New data report](https://github.com/Noie331/brotherhood-of-gold-trade-helper/issues/new?template=data-report.yml)**.
-   The title and label are already filled in.
-4. Click in the **Report** box, press **Ctrl+V**, then click **Create**.
+3. Paste it (**Ctrl+V**, then Enter) in the **#data-reports** channel on our Discord. Or, with a GitHub account, open
+   **[New data report](https://github.com/Noie331/brotherhood-of-gold-trade-helper/issues/new?template=data-report.yml)**,
+   click in the **Report** box, press **Ctrl+V**, then click **Create**.
 
-You need a free GitHub account to send a report. Send one whenever you've visited new vendors or looted recipes.
+A bot ticks your Discord message with ✅ once your report is in a release. Send one whenever you've visited new vendors or looted recipes.
 Sending again is fine, because every report you send is combined. Reports are merged into the data for the next
 release, and your issue is closed when that's done.
 
