@@ -452,6 +452,22 @@ local function build()
   scanBtn:SetPoint('TOPLEFT', frame, 'TOPLEFT', 12, -58)
   scanBtn:SetScript('OnClick', function() ns.Auction.Start() end)
 
+  -- Same as /bog export: opens the data report, selected and ready for Ctrl+C.
+  local exportBtn = CreateFrame('Button', nil, frame, 'UIPanelButtonTemplate')
+  exportBtn:SetSize(130, 22)
+  exportBtn:SetPoint('TOPRIGHT', frame, 'TOPRIGHT', -12, -58)
+  exportBtn:SetText('Send data report')
+  exportBtn:SetScript('OnClick', function() ns.ExportReport() end)
+  exportBtn:SetScript('OnEnter', function(self)
+    GameTooltip:SetOwner(self, 'ANCHOR_BOTTOMLEFT')
+    GameTooltip:SetText('Send data report')
+    GameTooltip:AddLine('Opens your recipe data report, already selected.', 1, 1, 1, true)
+    GameTooltip:AddLine('Press Ctrl+C, then paste it in the Discord #data-reports channel or a GitHub data report.', 1, 1, 1, true)
+    GameTooltip:AddLine('Same as /bog export.', 0.6, 0.6, 0.6)
+    GameTooltip:Show()
+  end)
+  exportBtn:SetScript('OnLeave', function() GameTooltip:Hide() end)
+
   statusText = frame:CreateFontString(nil, 'ARTWORK', 'GameFontHighlightSmall')
   statusText:SetPoint('LEFT', scanBtn, 'RIGHT', 10, 0)
 

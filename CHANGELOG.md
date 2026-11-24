@@ -1,5 +1,14 @@
 # Changelog
 
+## v0.1.9 - 2026-11-24
+
+- **Send data report** button at the top right of the helper: opens your data report, ready to copy (same as `/bog export`).
+- Data reports can now go in the **#data-reports** channel on Discord. A bot ticks them with a check mark once they are in a release.
+
+Recipe data from player reports:
+
+- Enchant Bracer - Lesser Intellect: taught by Gimble Thistlefuzz (Alliance)
+
 ## v0.1.8 - 2026-11-23
 
 - New Quests tab: profession quests for each profession you have, with Done / In quest log / Not done, what the

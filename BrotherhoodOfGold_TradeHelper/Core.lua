@@ -74,6 +74,7 @@ local function export()
   end
   ns.Export.Show(ns.Report.Export(rep, time(), ns.VERSION))
 end
+ns.ExportReport = export -- the window's Send data report button
 
 local f = CreateFrame('Frame')
 f:RegisterEvent('ADDON_LOADED')
