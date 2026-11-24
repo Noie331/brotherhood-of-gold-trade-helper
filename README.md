@@ -31,7 +31,9 @@ No other addon needed. Test build - thanks for trying it.
 **Updating:** close the game (or `/reload` afterwards), delete the old `BrotherhoodOfGold_TradeHelper` folder, then
 unzip the new one. Your settings and saved data are kept; they live in the `WTF` folder, not the addon folder.
 
-The window title shows the version you have.
+The window title shows the version you have. **What's new** in each version is in the
+[changelog](CHANGELOG.md). New recipe data from players' reports is released automatically, usually the night after
+it's sent.
 
 ---
 
