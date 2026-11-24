@@ -226,3 +226,5 @@ release, and your issue is closed when that's done.
 
 Data credits: trainer, vendor, drop and quest data from cMaNGOS classic-db (GPL-3.0); some recipe sources from
 Warcraft Wiki (warcraft.wiki.gg, CC BY-SA 3.0).
+
+Licence: GPL-3.0 (see [LICENSE](LICENSE)).
