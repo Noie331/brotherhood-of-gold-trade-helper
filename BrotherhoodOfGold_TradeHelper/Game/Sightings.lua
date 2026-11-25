@@ -77,7 +77,7 @@ function ns.RecipeSourceText(recipe)
       ns.RecipeSource.VendorNames(entry, ns.RecipeData.npcs))
   end
   local faction = ({ Alliance = 'A', Horde = 'H' })[UnitFactionGroup('player') or '']
-  return ns.RecipeSource.Text(entry, seen, faction, ns.Format.MoneyIcons, ns.RecipeData.npcs)
+  return ns.RecipeSource.Text(entry, seen, faction, ns.Format.MoneyIcons, ns.RecipeData.npcs, ns.RecipeData.rewardQuests)
 end
 
 local f = CreateFrame('Frame')

@@ -3,7 +3,6 @@ local _, ns = ...
 local Window = {}
 ns.Window = Window
 
-local W, H = 640, 600
 local DOT = { optimal = 'ff8040', medium = 'ffff00', easy = '40c040', trivial = '808080' }
 local GREEN, RED, GREY = '40c040', 'ff4040', '9a8f7a'
 local GAP = 10 -- space above each recipe
@@ -433,9 +432,17 @@ end
 
 local function build()
   frame = CreateFrame('Frame', 'BoG_TradeHelperFrame', UIParent, 'BasicFrameTemplateWithInset')
-  frame:SetSize(W, H)
+  frame:SetSize(ns.View.WindowSize(ns.db.ui.size))
   frame:SetFrameStrata('HIGH')
   frame:SetMovable(true)
+  frame:SetResizable(true)
+  local V = ns.View
+  if frame.SetResizeBounds then
+    frame:SetResizeBounds(V.WINDOW_MIN_W, V.WINDOW_MIN_H, V.WINDOW_MAX_W, V.WINDOW_MAX_H)
+  else
+    frame:SetMinResize(V.WINDOW_MIN_W, V.WINDOW_MIN_H)
+    frame:SetMaxResize(V.WINDOW_MAX_W, V.WINDOW_MAX_H)
+  end
   frame:SetClampedToScreen(true)
   frame:EnableMouse(true)
   frame:RegisterForDrag('LeftButton')
@@ -445,7 +452,7 @@ local function build()
 
   local title = frame:CreateFontString(nil, 'OVERLAY', 'GameFontNormal')
   title:SetPoint('TOP', frame, 'TOP', 0, -5)
-  title:SetText('Brotherhood of Gold - Trade Helper  |cff9d9d9dv' .. (ns.VERSION or '?') .. '|r')
+  title:SetText('Brotherhood of Gold - Profession Helper  |cff9d9d9dv' .. (ns.VERSION or '?') .. '|r')
 
   scanBtn = CreateFrame('Button', nil, frame, 'UIPanelButtonTemplate')
   scanBtn:SetSize(150, 22)
@@ -462,7 +469,7 @@ local function build()
     GameTooltip:SetOwner(self, 'ANCHOR_BOTTOMLEFT')
     GameTooltip:SetText('Send data report')
     GameTooltip:AddLine('Opens your recipe data report, already selected.', 1, 1, 1, true)
-    GameTooltip:AddLine('Press Ctrl+C, then paste it in the Discord #data-reports channel or a GitHub data report.', 1, 1, 1, true)
+    GameTooltip:AddLine('Press Ctrl+C, then paste it at ' .. ns.Export.URL .. ' and click Send. No account needed.', 1, 1, 1, true)
     GameTooltip:AddLine('Same as /bog export.', 0.6, 0.6, 0.6)
     GameTooltip:Show()
   end)
@@ -536,6 +543,30 @@ local function build()
   view:SetElementExtentCalculator(extent)
   view:SetElementInitializer('Frame', initRow)
   ScrollUtil.InitScrollBoxListWithScrollBar(box, bar, view)
+
+  -- Drag the bottom-right corner to resize; the size is saved like the position.
+  local grip = CreateFrame('Button', nil, frame)
+  grip:SetSize(16, 16)
+  grip:SetPoint('BOTTOMRIGHT', frame, 'BOTTOMRIGHT', -3, 3)
+  grip:SetFrameLevel(frame:GetFrameLevel() + 10)
+  grip:SetNormalTexture('Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Up')
+  grip:SetHighlightTexture('Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Highlight')
+  grip:SetPushedTexture('Interface\\ChatFrame\\UI-ChatIM-SizeGrabber-Down')
+  grip:SetScript('OnMouseDown', function(_, button)
+    if button == 'LeftButton' then frame:StartSizing('BOTTOMRIGHT') end
+  end)
+  grip:SetScript('OnMouseUp', function()
+    frame:StopMovingOrSizing()
+    local w, h = frame:GetSize()
+    ns.db.ui.size = { math.floor(w + 0.5), math.floor(h + 0.5) }
+    savePoint()
+  end)
+  grip:SetScript('OnEnter', function(self)
+    GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
+    GameTooltip:SetText('Drag to resize')
+    GameTooltip:Show()
+  end)
+  grip:SetScript('OnLeave', function() GameTooltip:Hide() end)
 
   frame:SetScript('OnShow', function()
     ticker = C_Timer.NewTicker(1, ns.RefreshStatus)

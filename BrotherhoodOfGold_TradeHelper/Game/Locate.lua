@@ -79,7 +79,7 @@ local function spotsFor(line)
   local entry = data and data.recipes[line.recipeID]
   if not entry then return {} end
   local faction = myFaction()
-  local spots = ns.RecipeSource.Spots(entry, data.npcs, faction)
+  local spots = ns.RecipeSource.Spots(entry, data.npcs, faction, data.rewardQuests)
   L.ApplyMoved(spots, ns.db and ns.db.moved)
   local listed = {}
   for _, s in ipairs(spots) do listed[s.kind .. s.name] = true end
@@ -164,7 +164,7 @@ function L.Lines(line)
   return out
 end
 
-local function say(msg) print('|cffe8c66aTrade Helper|r ' .. msg) end
+local function say(msg) print('|cffe8c66aProfession Helper|r ' .. msg) end
 
 -- Click on a recipe: list where to get it in chat and pin the nearest spot on the map.
 function L.Show(line)

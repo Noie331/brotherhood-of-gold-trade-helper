@@ -6,7 +6,7 @@ ns.RecipeSource = RS
 
 local FACTION_NAME = { A = 'Alliance', H = 'Horde' }
 local MANY_TRAINERS = 3 -- more than this: "any of N trainers"
-RS.NO_SOURCE = 'Recipe item - source unknown'
+RS.NO_SOURCE = 'Source unknown - send a data report if you find it'
 
 local function names(list)
   local text = table.concat(list, ', ', 1, math.min(2, #list))
@@ -93,10 +93,22 @@ local function listText(label, list)
   return label .. ': ' .. names(list)
 end
 
+-- Quest titles, each with the quest to do first when the data file's rewardQuests knows it.
+local function questTitles(titles, rq)
+  if not titles then return nil end
+  local out = {}
+  for i, title in ipairs(titles) do
+    local after = rq and rq[title] and rq[title].after
+    out[i] = after and (title .. ' (after ' .. after .. ')') or title
+  end
+  return out
+end
+
 -- entry: the data file's row for the recipe (nil when it isn't in the file).
 -- seenText: vendors/drops recorded for the recipe item (Sightings), or nil. faction: 'A' or 'H'.
+-- rq: the data file's rewardQuests ({ [title] = { givers, objects, after } }), or nil.
 -- Returns where to get the recipe (nil when nothing is known), and the skill needed to learn it.
-function RS.Text(entry, seenText, faction, fmt, npcs)
+function RS.Text(entry, seenText, faction, fmt, npcs, rq)
   if not entry then return seenText end
   fmt = fmt or (ns.Format and ns.Format.Money) or tostring
   npcs = npcs or {}
@@ -106,8 +118,7 @@ function RS.Text(entry, seenText, faction, fmt, npcs)
   parts[#parts + 1] = vendorText(entry, npcs, faction, fmt)
   parts[#parts + 1] = dropText(entry, npcs)
   parts[#parts + 1] = listText('Chest', entry.objects)
-  parts[#parts + 1] = listText('Quest', entry.quests)
-  parts[#parts + 1] = entry.wiki -- Warcraft Wiki text, only in the file when nothing above is known
+  parts[#parts + 1] = listText('Quest', questTitles(entry.quests, rq))
   parts[#parts + 1] = seenText
   if #parts > 0 then return table.concat(parts, '  ·  '), entry.skill end
   return entry.items and RS.NO_SOURCE or nil, entry.skill
@@ -136,12 +147,25 @@ local function spotsOf(ids, npcs, faction, kind, anyFaction)
   return out
 end
 
--- Where the data file's trainers, vendors and drop mobs for this recipe stand:
--- { { kind = 'Trainer'|'Vendor'|'Drop', name, map, x, y, pct (drops: % chance) } } (world map id and server x, y), the same npcs the text shows.
-function RS.Spots(entry, npcs, faction)
+-- The givers of the quests that reward this recipe (rq: the data file's rewardQuests), each once.
+local function questGivers(titles, rq)
+  local out, seen = {}, {}
+  for _, title in ipairs(titles or {}) do
+    for _, id in ipairs(rq and rq[title] and rq[title].givers or {}) do
+      if not seen[id] then seen[id] = true; out[#out + 1] = id end
+    end
+  end
+  return out
+end
+
+-- Where the data file's trainers, vendors, drop mobs and reward quest givers for this recipe stand:
+-- { { kind = 'Trainer'|'Vendor'|'Drop'|'Quest giver', name, map, x, y, pct (drops: % chance) } } (world map id and
+-- server x, y), the same npcs the text shows.
+function RS.Spots(entry, npcs, faction, rq)
   local out = {}
   if not entry then return out end
-  for _, part in ipairs({ { entry.trainers, 'Trainer' }, { entry.vendors, 'Vendor' }, { entry.drops or (entry.best and { entry.best }), 'Drop', true } }) do
+  for _, part in ipairs({ { entry.trainers, 'Trainer' }, { entry.vendors, 'Vendor' }, { entry.drops or (entry.best and { entry.best }), 'Drop', true },
+                          { questGivers(entry.quests, rq), 'Quest giver' } }) do
     for _, s in ipairs(spotsOf(part[1], npcs, faction, part[2], part[3])) do out[#out + 1] = s end
   end
   return out

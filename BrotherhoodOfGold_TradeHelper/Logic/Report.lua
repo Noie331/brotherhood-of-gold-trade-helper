@@ -3,10 +3,12 @@
 -- Shape (account-wide BoG_DB.report):
 --   { v = 1, id = random reporter token, build,
 --     vendors  = { [npcID] = { n = name, f = 'A'|'H'|'', m = uiMap, x, y, items = { [itemID] = { p = copper, l = limited, c = 'other cost' } } } },
---     drops    = { [npcID] = { n, m, x, y, items = { [itemID] = times looted } } },
+--     drops    = { [npcID] = { n, m, x, y, items = { [itemID] = times looted } } },  (every recipe item, known or not)
 --     looted   = { [npcID] = corpses looted },
 --     trainers = { [npcID] = { n, f, m, x, y, teach = { ['Profession:Recipe name'] = skill needed } } },
---     moved    = { [npcID] = { n, f, m, x, y } } }  (vendors/trainers the data file has standing somewhere else)
+--     moved    = { [npcID] = { n, f, m, x, y } },  (vendors/trainers the data file has standing somewhere else)
+--     quests   = { [questID] = { t = title, items = { itemID, ... }, g = giver npcID, n, f, m, x, y } } }
+--                (recipe items a quest gives; the giver and where you stood when it was offered)
 local _, ns = ...
 local R = {}
 ns.Report = R
@@ -57,6 +59,28 @@ function R.Loot(rep, npc, spot, itemIDs, keep)
   end
 end
 
+-- One quest's reward and choice items (offered or handed in): quest = { id, title }; keep(itemID, title) says
+-- whether it is news. giver (the npc offering it) and spot (where you stood) are kept from the offer: handing it in
+-- (no giver) leaves them. Returns how many recipe items were kept.
+function R.Quest(rep, quest, itemIDs, keep, giver, spot)
+  if not quest or not quest.id or not quest.title then return 0 end
+  local new = {}
+  for _, id in ipairs(itemIDs or {}) do
+    if keep(id, quest.title) then new[#new + 1] = id end
+  end
+  if #new == 0 then return 0 end
+  table.sort(new)
+  rep.quests = rep.quests or {}
+  local r = rep.quests[quest.id] or {}
+  r.t, r.items = quest.title, new
+  if giver and giver.id then
+    r.g, r.n, r.f = giver.id, giver.name, giver.faction or ''
+    if spot then r.m, r.x, r.y = spot.uiMap, spot.x, spot.y end
+  end
+  rep.quests[quest.id] = r
+  return #new
+end
+
 -- services: { { name, prof, skill } }; ones without a profession (riding, ranks) are left out.
 function R.Trainer(rep, npc, spot, services)
   if not npc or not npc.id then return end
@@ -92,15 +116,17 @@ function R.Moved(rep, npc, moved, spot)
   end
 end
 
--- What the data file already knows per recipe item: { [itemID] = { vendors = { [npc] = true }, drops = { [npc] = true } } }.
+-- What the data file already knows per recipe item:
+-- { [itemID] = { vendors = { [npc] = true }, drops = { [npc] = true }, quests = { [title] = true } } }.
 -- World drops list no mobs, so every mob's count for them is news.
 function R.Index(recipes)
   local idx = {}
   for _, e in pairs(recipes or {}) do
     for _, item in ipairs(e.items or {}) do
-      local k = idx[item] or { vendors = {}, drops = {} }
+      local k = idx[item] or { vendors = {}, drops = {}, quests = {} }
       idx[item] = k
       for _, v in ipairs(e.vendors or {}) do k.vendors[v[1]] = true end
+      for _, title in ipairs(e.quests or {}) do k.quests[title] = true end
       if not e.worldDrop then
         for _, d in ipairs(e.drops or {}) do k.drops[type(d) == 'table' and d[1] or d] = true end
       end
@@ -109,11 +135,37 @@ function R.Index(recipes)
   return idx
 end
 
--- keep(itemID, npcID) for R.Vendor / R.Loot: a recipe item from an npc the data file doesn't list for it.
+-- keep(itemID, npcID) for R.Vendor / R.Loot (keep(itemID, title) for R.Quest, section 'quests'): a recipe item
+-- from an npc or quest the data file doesn't list for it.
 function R.Keeper(idx, section)
   return function(item, npc)
     local k = idx[item]
     return k ~= nil and not k[section][npc]
+  end
+end
+
+-- keep(itemID, npcID) for R.Loot: any recipe item, known drop or not, so drop chances can be measured on WoW Forever.
+function R.RecipeItem(idx)
+  return function(item) return idx[item] ~= nil end
+end
+
+-- { [npcID] = true } for every mob the data file lists as dropping a recipe (world drops aside): their corpse counts
+-- go in the report even when nothing dropped, or a chance measured from reports would come out too high.
+function R.Droppers(idx)
+  local out = {}
+  for _, k in pairs(idx) do
+    for npc in pairs(k.drops) do out[npc] = true end
+  end
+  return out
+end
+
+-- keep(itemID, title) for R.Quest: the data file doesn't list the quest for the item, or knows no quest giver for
+-- it (rq: the data file's rewardQuests).
+function R.QuestKeeper(idx, rq)
+  return function(item, title)
+    local k = idx[item]
+    if k == nil then return false end
+    return not k.quests[title] or not (rq and rq[title] and rq[title].givers and #rq[title].givers > 0)
   end
 end
 
@@ -159,14 +211,23 @@ function R.JSON(v)
   return '{' .. table.concat(parts, ',') .. '}'
 end
 
-function R.IsEmpty(rep)
-  return next(rep.vendors) == nil and next(rep.drops) == nil and next(rep.trainers) == nil and next(rep.moved or {}) == nil
-end
-
--- One line: 'BOG1 ' .. JSON. Looted counts only for npcs that dropped a recipe item. addon: the addon's version.
-function R.Export(rep, now, addon)
+-- Looted counts to send: npcs that dropped a recipe item, and npcs the data file lists as droppers (R.Droppers).
+local function sentLooted(rep, droppers)
   local looted = {}
   for id in pairs(rep.drops) do looted[id] = rep.looted[id] end
+  for id in pairs(droppers or {}) do looted[id] = rep.looted[id] or looted[id] end
+  return looted
+end
+
+function R.IsEmpty(rep, droppers)
+  return next(rep.vendors) == nil and next(rep.drops) == nil and next(rep.trainers) == nil and next(rep.moved or {}) == nil
+    and next(rep.quests or {}) == nil and next(sentLooted(rep, droppers)) == nil
+end
+
+-- One line: 'BOG1 ' .. JSON. addon: the addon's version; droppers: see sentLooted.
+function R.Export(rep, now, addon, droppers)
+  local looted = sentLooted(rep, droppers)
   return 'BOG1 ' .. R.JSON({ v = rep.v, id = rep.id, build = rep.build, t = now, addon = addon,
-    vendors = rep.vendors, drops = rep.drops, looted = looted, trainers = rep.trainers, moved = rep.moved })
+    vendors = rep.vendors, drops = rep.drops, looted = looted, trainers = rep.trainers, moved = rep.moved,
+    quests = rep.quests and next(rep.quests) and rep.quests or nil })
 end

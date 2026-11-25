@@ -29,7 +29,7 @@ local function yes(v) return v and '|cff40c040yes|r' or '|cffff4040no|r' end
 
 local function probe()
   local _, build, _, interface = GetBuildInfo()
-  print('|cffe8c66aTrade Helper v' .. ns.VERSION .. ' probe|r')
+  print('|cffe8c66aProfession Helper v' .. ns.VERSION .. ' probe|r')
   print('  build ' .. tostring(build) .. ', interface ' .. tostring(interface) .. ' (toc says 16001)')
   print('  ProfessionsFrame: ' .. yes(ProfessionsFrame) .. '  TradeSkillFrame: ' .. yes(TradeSkillFrame)
     .. ' (open a profession first)')
@@ -62,17 +62,17 @@ local function probe()
   end
 end
 
-local function say(msg) print('|cffe8c66aTrade Helper|r ' .. msg) end
+local function say(msg) print('|cffe8c66aProfession Helper|r ' .. msg) end
 
 -- /bog export: the data report to copy into a report for the shared data file.
 local function export()
   local rep = ns.db.report
-  if not rep or ns.Report.IsEmpty(rep) then
+  if not rep or ns.Report.IsEmpty(rep, ns.Report.droppers) then
     say('Nothing new to report yet: visit vendors and trainers, and loot mobs.'
       .. (ns.db.record == false and ' Recording is off: /bog record on' or ''))
     return
   end
-  ns.Export.Show(ns.Report.Export(rep, time(), ns.VERSION))
+  ns.Export.Show(ns.Report.Export(rep, time(), ns.VERSION, ns.Report.droppers))
 end
 ns.ExportReport = export -- the window's Send data report button
 

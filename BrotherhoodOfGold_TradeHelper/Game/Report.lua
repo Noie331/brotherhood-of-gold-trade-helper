@@ -1,13 +1,16 @@
--- Data report: records vendors, drops and trainers the recipe data file doesn't know yet, and known vendors and
+-- Data report: records vendors, trainers and quest rewards the recipe data file doesn't know yet, every recipe drop
+-- (with corpse counts, for drop chances), and known vendors and
 -- trainers that stand somewhere else now (Logic/Report.lua).
 -- On unless /bog record off. /bog export shows it to copy into a data report.
 local _, ns = ...
 local R = ns.Report
 
-local vendorNews, dropNews
+local vendorNews, dropNews, questNews
 function R.Reindex()
   local idx = R.Index(ns.RecipeData and ns.RecipeData.recipes)
-  vendorNews, dropNews = R.Keeper(idx, 'vendors'), R.Keeper(idx, 'drops')
+  vendorNews, dropNews = R.Keeper(idx, 'vendors'), R.RecipeItem(idx)
+  R.droppers = R.Droppers(idx)
+  questNews = R.QuestKeeper(idx, ns.RecipeData and ns.RecipeData.rewardQuests)
 end
 R.Reindex()
 
@@ -89,9 +92,50 @@ end
 
 local corpses = {} -- GUIDs looted this session: each corpse counts once
 
+-- Pick Pocket, Skinning, Herb Gathering, Mining (every rank): their loot window isn't a looted corpse.
+local GATHER_IDS = { 921, 8613, 8617, 8618, 10768, 2366, 2368, 3570, 11993, 2575, 2576, 3564, 10248 }
+local gatherIDs, gatherNames, gatheredAt = {}, nil, nil
+for _, id in ipairs(GATHER_IDS) do gatherIDs[id] = true end
+
+local function spellName(id)
+  if C_Spell and C_Spell.GetSpellInfo then
+    local info = C_Spell.GetSpellInfo(id)
+    if type(info) == 'table' then return info.name end
+  end
+  return GetSpellInfo and (GetSpellInfo(id)) or nil
+end
+
+local function isGather(spellID)
+  if gatherIDs[spellID] then return true end
+  if not gatherNames then
+    gatherNames = {}
+    for _, id in ipairs({ 921, 8613, 2366, 2575 }) do
+      local name = spellName(id)
+      if name then gatherNames[name] = true end
+    end
+  end
+  local name = spellID and spellName(spellID)
+  return name ~= nil and gatherNames[name] == true
+end
+
+local function castSucceeded(unit, spellID)
+  if unit == 'player' and isGather(spellID) then gatheredAt = GetTime and GetTime() end
+end
+
+-- A living unit with this GUID (target or mouseover): its loot is a pick-pocket, not a corpse.
+local function alive(guid)
+  if not UnitIsDead then return false end
+  for _, unit in ipairs({ 'target', 'mouseover' }) do
+    if UnitGUID(unit) == guid then return not UnitIsDead(unit) end
+  end
+  return false
+end
+
 local function loot()
   local rep = R.Current()
   if not rep or not GetNumLootItems or not GetLootSourceInfo then return end
+  if gatheredAt and GetTime and GetTime() - gatheredAt < 3 then gatheredAt = nil; return end
+  gatheredAt = nil
   local onCorpse, order = {}, {}
   for slot = 1, GetNumLootItems() do
     local link = GetLootSlotLink(slot)
@@ -105,7 +149,7 @@ local function loot()
   end
   local here = ns.Locate.Here and ns.Locate.Here()
   for _, guid in ipairs(order) do
-    if not corpses[guid] then
+    if not corpses[guid] and not alive(guid) then
       corpses[guid] = true
       R.Loot(rep, npcByGUID(guid), here, onCorpse[guid], dropNews)
     end
@@ -128,12 +172,42 @@ local function trainer()
   R.Trainer(rep, npc, here, services)
 end
 
+-- The quest window (offered, or handing it in): its reward and choice items, and on the offer who gives it and
+-- where you stand. A link the game hasn't loaded yet comes back nil, so look again a moment later.
+local function quest(offered, retry)
+  local rep = R.Current()
+  if not rep or not GetQuestID or not GetQuestItemLink then return end
+  local id = GetQuestID()
+  if not id or id == 0 then return end
+  local items, missing = {}, false
+  for _, kind in ipairs({ 'reward', 'choice' }) do
+    local count = kind == 'reward' and GetNumQuestRewards and GetNumQuestRewards()
+      or kind == 'choice' and GetNumQuestChoices and GetNumQuestChoices() or 0
+    for i = 1, count do
+      local link = GetQuestItemLink(kind, i)
+      local item = link and tonumber(link:match('item:(%d+)'))
+      if item then items[#items + 1] = item else missing = true end
+    end
+  end
+  local giver, here
+  if offered then giver, here = npcFrom('npc'), ns.Locate.Here and ns.Locate.Here() end
+  R.Quest(rep, { id = id, title = GetTitleText and GetTitleText() }, items, questNews, giver, here)
+  if missing and not retry and C_Timer then C_Timer.After(1, function() quest(offered, true) end) end
+end
+
 local f = CreateFrame('Frame')
 f:RegisterEvent('MERCHANT_SHOW')
 f:RegisterEvent('LOOT_OPENED')
 f:RegisterEvent('TRAINER_SHOW')
-f:SetScript('OnEvent', function(_, event)
-  if event == 'MERCHANT_SHOW' then ns.Throttle('reportVendor', 0.5, merchant)
+f:RegisterEvent('QUEST_DETAIL')
+f:RegisterEvent('QUEST_COMPLETE')
+f:RegisterEvent('UNIT_SPELLCAST_SUCCEEDED')
+f:SetScript('OnEvent', function(_, event, ...)
+  if event == 'UNIT_SPELLCAST_SUCCEEDED' then
+    local unit, _, spellID = ...
+    castSucceeded(unit, spellID)
+  elseif event == 'MERCHANT_SHOW' then ns.Throttle('reportVendor', 0.5, merchant)
   elseif event == 'LOOT_OPENED' then loot()
+  elseif event == 'QUEST_DETAIL' or event == 'QUEST_COMPLETE' then quest(event == 'QUEST_DETAIL')
   else ns.Throttle('reportTrainer', 0.5, trainer) end
 end)

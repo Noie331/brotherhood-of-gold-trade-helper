@@ -23,7 +23,7 @@ local function status() if ns.RefreshStatus then ns.RefreshStatus() end end
 
 local function stop(msg)
   scanning, reading, acc, qty = false, false, nil, nil
-  if msg then print('|cffe8c66aTrade Helper:|r ' .. msg) end
+  if msg then print('|cffe8c66aProfession Helper:|r ' .. msg) end
   status()
 end
 
@@ -51,7 +51,7 @@ local function step(from)
   if done >= total then
     ns.Scan.Finish(realmData(), acc, startedAt, time(), qty)
     scanning, reading, acc, qty = false, false, nil, nil
-    print('|cffe8c66aTrade Helper:|r AH scan done, ' .. total .. ' auctions read.')
+    print('|cffe8c66aProfession Helper:|r AH scan done, ' .. total .. ' auctions read.')
     if ns.Refresh then ns.Refresh() end
   else
     status()

@@ -3,8 +3,8 @@ local _, ns = ...
 local E = {}
 ns.Export = E
 
--- Where players paste their report (GitHub issue form "Recipe data report").
-E.URL = 'github.com/Noie331/brotherhood-of-gold-trade-helper/issues/new?template=data-report.yml'
+-- Where players paste their report: the paste page (tools/report-worker), no account needed.
+E.URL = 'bog-reports.brotherhoodofgold.com'
 
 local frame, edit, last
 
@@ -21,12 +21,12 @@ local function build()
   tinsert(UISpecialFrames, 'BoG_ExportFrame')
   local title = frame:CreateFontString(nil, 'OVERLAY', 'GameFontHighlight')
   title:SetPoint('TOP', 0, -5)
-  title:SetText('Trade Helper - recipe data report')
+  title:SetText('Profession Helper - recipe data report')
   local help = frame:CreateFontString(nil, 'OVERLAY', 'GameFontNormalSmall')
   help:SetPoint('TOPLEFT', 14, -32)
   help:SetPoint('TOPRIGHT', -14, -32)
   help:SetJustifyH('LEFT')
-  help:SetText('Press Ctrl+C to copy, then paste it into a new report at\n' .. E.URL)
+  help:SetText('Press Ctrl+C to copy, then open this page in your browser, paste it and click Send:\n' .. E.URL)
   local scroll = CreateFrame('ScrollFrame', nil, frame, 'UIPanelScrollFrameTemplate')
   scroll:SetPoint('TOPLEFT', 14, -66)
   scroll:SetPoint('BOTTOMRIGHT', -32, 14)

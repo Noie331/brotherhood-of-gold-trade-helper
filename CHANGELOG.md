@@ -1,9 +1,55 @@
 # Changelog
 
+## v0.1.10 - 2026-11-25
+
+- Data reports now include quest rewards: open a quest window (offered or handing in) and any recipe it gives that the addon does not know goes in your report.
+- Recipes from quests: the Recipes tab says which quest to do first, and hovering shows where the quest giver stands (click for a map pin).
+- More recipe sources from what WoW Forever players recorded (EG Link output by Efficient Games, CC BY 4.0): extra vendors, drops, quest rewards with their quest givers, and trainers. Many trainer recipes now show the skill WoW Forever trainers really ask (often lower than classic).
+- Recipes nobody has found yet say "Source unknown - send a data report if you find it" (the Warcraft Wiki lines are gone).
+- Data reports can be sent on a web page: paste and click Send, no account needed. The report window shows the address.
+- Drop chances: pick-pocketing a mob or skinning, mining or herbing a corpse no longer counts as looting it.
+- Drop chances measured on WoW Forever: the addon now counts every recipe drop, known or not, and the corpses of mobs that drop recipes. Once a mob has 50 corpses and 3 drops counted (your reports plus EG Link), that chance replaces the classic one.
+- New name: **Brotherhood of Gold - Profession Helper** (was Trade Helper). Your saved prices and recipes stay.
+- New logo: the gold coin tab on the profession window is now the Brotherhood of Gold crest, twice as big.
+- The helper window can be resized: drag its bottom-right corner. It remembers the size.
+
+New recipe sources (player reports, EG Link):
+
+- Elixir of Minor Strength: taught by Doctor Martin Felben (Horde), Miao'zan (Horde)
+- Copper Chain Pants: taught by Brikk Keencraft
+- Rough Bronze Shoulders: taught by Brikk Keencraft
+- Big Bronze Knife: taught by Brikk Keencraft
+- Handful of Copper Bolts: taught by Kaylaena Springwhisper
+- Rough Copper Bomb: taught by Kaylaena Springwhisper
+- Copper Tube: taught by Kaylaena Springwhisper
+- Rough Boomstick: taught by Kaylaena Springwhisper
+- Copper Modulator: taught by Kaylaena Springwhisper
+- Coarse Blasting Powder: taught by Kaylaena Springwhisper
+- Crafted Heavy Shot: taught by Kaylaena Springwhisper
+- Coarse Dynamite: taught by Kaylaena Springwhisper
+- Target Dummy: taught by Kaylaena Springwhisper
+- Flying Tiger Goggles: taught by Kaylaena Springwhisper
+- Deadly Blunderbuss: taught by Kaylaena Springwhisper
+- Large Copper Bomb: taught by Kaylaena Springwhisper
+- Bronze Tube: taught by Kaylaena Springwhisper
+- Small Bronze Bomb: taught by Kaylaena Springwhisper
+- Whirring Bronze Gizmo: taught by Kaylaena Springwhisper
+- Heavy Blasting Powder: taught by Kaylaena Springwhisper
+- Heavy Dynamite: taught by Kaylaena Springwhisper
+- Crafted Solid Shot: taught by Kaylaena Springwhisper
+- Silver-plated Shotgun: taught by Kaylaena Springwhisper
+- Big Bronze Bomb: taught by Kaylaena Springwhisper
+- Bronze Framework: taught by Kaylaena Springwhisper
+- Explosive Sheep: taught by Kaylaena Springwhisper
+- Green Tinted Goggles: taught by Kaylaena Springwhisper
+- Iron Strut: taught by Kaylaena Springwhisper
+- Gyrochronatom: taught by Kaylaena Springwhisper
+- Iron Grenade: taught by Kaylaena Springwhisper
+- ...and 56 more recipe sources (48 trainer, 7 vendor, 1 drop)
+
 ## v0.1.9 - 2026-11-24
 
 - **Send data report** button at the top right of the helper: opens your data report, ready to copy (same as `/bog export`).
-- Data reports can now go in the **#data-reports** channel on Discord. A bot ticks them with a check mark once they are in a release.
 
 Recipe data from player reports:
 

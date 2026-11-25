@@ -11,9 +11,20 @@ local NO_RECIPES = { Fishing = true }
 -- Skill lines with no recipes (Herbalism, Skinning, Fishing, Archaeology), matched by id so any language works.
 View.NO_RECIPE_SKILL_LINES = { [182] = true, [393] = true, [356] = true, [794] = true }
 
--- Side tab drag: y offset (from the window's top edge, <= 0) that centres the 36 px tab on the cursor,
+-- Side tab drag: y offset (from the window's top edge, <= 0) that centres the tab (the addon's logo) on the cursor,
 -- kept within the window's height.
-View.TAB_SIZE = 36
+View.TAB_SIZE = 72
+
+-- Helper window size: the saved { w, h } from dragging its corner, kept within limits; 640 x 600 by default.
+-- Narrower than 640 and the recipe rows' price columns would overlap.
+View.WINDOW_MIN_W, View.WINDOW_MIN_H = 640, 400
+View.WINDOW_MAX_W, View.WINDOW_MAX_H = 1600, 1200
+function View.WindowSize(saved)
+  local w, h = saved and tonumber(saved[1]), saved and tonumber(saved[2])
+  if not w or not h then return 640, 600 end
+  return math.max(View.WINDOW_MIN_W, math.min(View.WINDOW_MAX_W, w)),
+    math.max(View.WINDOW_MIN_H, math.min(View.WINDOW_MAX_H, h))
+end
 function View.TabOffset(cursorY, windowTop, windowHeight)
   local y = -(windowTop - cursorY) + View.TAB_SIZE / 2
   return math.max(-(windowHeight - View.TAB_SIZE), math.min(0, y))

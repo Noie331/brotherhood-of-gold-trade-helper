@@ -1,8 +1,9 @@
--- The gold coin tab on the right edge of the profession window.
+-- The logo tab (the BoG crest) on the right edge of the profession window.
 -- It sits above the window's own tabs and can be dragged up or down the edge; the spot is saved.
 local _, ns = ...
 
 local BOTTOM_GAP = 20 -- default: this far up from the window's bottom edge
+local LOGO = 'Interface\\AddOns\\BrotherhoodOfGold_TradeHelper\\Media\\logo' -- Media/logo.tga, 128 px
 
 -- y = offset from the window's top edge (a dragged spot), or nil for the default bottom spot.
 local function setY(b, parent, y)
@@ -21,8 +22,8 @@ local function create()
   b:SetFrameLevel(parent:GetFrameLevel() + 100) -- above the window's own tabs and other addons' buttons
   b:SetToplevel(true)
   setY(b, parent, ns.db and ns.db.ui.sideTabSpot)
-  b:SetNormalTexture('Interface\\Icons\\INV_Misc_Coin_01')
-  b:SetHighlightTexture('Interface\\Buttons\\ButtonHilight-Square', 'ADD')
+  b:SetNormalTexture(LOGO)
+  b:SetHighlightTexture(LOGO, 'ADD') -- the logo glows on hover
 
   b:RegisterForClicks('LeftButtonUp')
   b:RegisterForDrag('LeftButton')
@@ -44,7 +45,7 @@ local function create()
 
   b:SetScript('OnEnter', function(self)
     GameTooltip:SetOwner(self, 'ANCHOR_RIGHT')
-    GameTooltip:SetText('Brotherhood of Gold - Trade Helper')
+    GameTooltip:SetText('Brotherhood of Gold - Profession Helper')
     GameTooltip:AddLine('Click to open. Drag to move along the edge.', 1, 1, 1)
     GameTooltip:Show()
   end)

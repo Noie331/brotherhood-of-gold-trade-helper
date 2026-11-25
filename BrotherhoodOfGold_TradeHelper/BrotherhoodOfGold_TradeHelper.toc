@@ -1,7 +1,7 @@
 ## Interface: 16001
-## Title: Brotherhood of Gold - Trade Helper
+## Title: Brotherhood of Gold - Profession Helper
 ## Notes: Profession leveling costs and profits
-## Version: 0.1.9
+## Version: 0.1.10
 ## SavedVariables: BoG_DB
 ## SavedVariablesPerCharacter: BoG_CharDB
 
