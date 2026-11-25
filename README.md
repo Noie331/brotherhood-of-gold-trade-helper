@@ -1,4 +1,4 @@
-# Brotherhood of Gold - Trade Helper
+# Brotherhood of Gold - Profession Helper
 
 A WoW Forever addon for levelling professions and making gold from them. It shows:
 
@@ -13,8 +13,8 @@ No other addon needed. Test build - thanks for trying it.
 
 ## Install
 
-1. Download the latest zip from **[Releases](https://github.com/Noie331/brotherhood-of-gold-trade-helper/releases/latest)**.
-   Under **Assets**, click `BrotherhoodOfGold_TradeHelper-vX.Y.Z.zip`. Don't use "Source code".
+1. Get the latest `BrotherhoodOfGold_TradeHelper-vX.Y.Z.zip` from the addon's CurseForge page (the CurseForge app
+   can install it for you instead: then skip step 2).
 2. Unzip it into your AddOns folder:
 
    ```
@@ -26,7 +26,7 @@ No other addon needed. Test build - thanks for trying it.
    Not `...\AddOns\BrotherhoodOfGold_TradeHelper\BrotherhoodOfGold_TradeHelper\...`: if you see that, move the inner
    folder up one level.
 3. Start the game, or type `/reload` if it's already running.
-4. On the character screen, under **AddOns**, "Brotherhood of Gold - Trade Helper" should be ticked.
+4. On the character screen, under **AddOns**, "Brotherhood of Gold - Profession Helper" should be ticked.
 
 **Updating:** close the game (or `/reload` afterwards), delete the old `BrotherhoodOfGold_TradeHelper` folder, then
 unzip the new one. Your settings and saved data are kept; they live in the `WTF` folder, not the addon folder.
@@ -39,10 +39,11 @@ it's sent.
 
 ## Opening it
 
-- **Gold coin tab:** open any profession. A gold coin tab sits on the right edge of the profession window. Click it to
-  open the helper on that profession. You can drag the coin up or down the edge, and it remembers where you put it.
+- **BoG crest tab:** open any profession. The Brotherhood of Gold crest sits on the right edge of the profession window. Click it to
+  open the helper on that profession. You can drag the crest up or down the edge, and it remembers where you put it.
 - **`/bog`:** opens or closes the helper anywhere.
-- **Moving it:** drag the helper by its title bar. It remembers where you leave it.
+- **Moving and resizing:** drag the helper by its title bar to move it, or by its bottom-right corner to make it
+  bigger. It remembers where you leave it and how big.
 
 **Open each profession once after installing.** That's how the addon learns your recipes. Until then the tab says
 "Open <profession> once to load its recipes."
@@ -112,13 +113,13 @@ Every recipe of a profession, **learned or not**, lowest skill first. The header
   - **Trainer** (or "any of N trainers")
   - **Vendor**, with the price; "(limited)" means limited supply
   - **Drop**, with drop chance, highest first, or **world drop**
-  - **Chest** or **Quest**
+  - **Chest**, or **Quest** with the quest to do first ("Quest: Apprentice's Duties (after Young Crocolisk Skins)")
   - **Learned with the profession**
-  - Newer WoW Forever recipes show a line from Warcraft Wiki instead.
+  - **Source unknown** when nobody has found it yet: send a data report if you do.
 - **Your faction:** you see your own faction's trainers and vendors. Ones that only the other faction has are marked
   "(Horde only)" or "(Alliance only)".
 
-**Hover a recipe** to see the recipe tooltip and a **Where to get it** list. Each trainer, vendor and drop mob gets a
+**Hover a recipe** to see the recipe tooltip and a **Where to get it** list. Each trainer, vendor, drop mob and quest giver gets a
 line like:
 
 ```
@@ -194,7 +195,7 @@ The quest list comes from classic 1.12 data, so a quest that WoW Forever changed
 The recipe data comes from classic 1.12 data, so some WoW Forever vendors, drops and recipes are missing. You can
 help fill the gaps.
 
-While you play, the addon quietly notes recipe vendors, recipe drops and trainers it doesn't know yet. It also notices when a vendor or trainer it does know is standing somewhere else, more than 100 yards away or in
+While you play, the addon quietly notes recipe vendors, recipe drops, trainers and quests that reward a recipe, when it doesn't know them yet (a quest counts as soon as you open its window, no need to finish it). It also notices when a vendor or trainer it does know is standing somewhere else, more than 100 yards away or in
 another zone. Your hover and map pin then use where you actually saw it, and the move goes into your report so
 everyone's data gets fixed. It saves NPC
 and item ids, prices, drop counts and where you stood. It saves **no character, realm or account names**.
@@ -204,27 +205,22 @@ and item ids, prices, drop counts and where you stood. It saves **no character, 
 1. In the helper, click **Send data report** (top right), or type `/bog export`. A window opens with one long line
    starting `BOG1 {`, already selected.
 2. Press **Ctrl+C** to copy it.
-3. Paste it (**Ctrl+V**, then Enter) in the **#data-reports** channel on our Discord. Or, with a GitHub account, open
-   **[New data report](https://github.com/Noie331/brotherhood-of-gold-trade-helper/issues/new?template=data-report.yml)**,
-   click in the **Report** box, press **Ctrl+V**, then click **Create**.
+3. Open **[bog-reports.brotherhoodofgold.com](https://bog-reports.brotherhoodofgold.com)** in your browser, click in the box, press **Ctrl+V**, then click **Send**.
+   No account or sign-up needed.
 
-A bot ticks your Discord message with ✅ once your report is in a release. Send one whenever you've visited new vendors or looted recipes.
-Sending again is fine, because every report you send is combined. Reports are merged into the data for the next
-release, and your issue is closed when that's done.
+Send one whenever you've visited new vendors or looted recipes. Sending again is fine, because every report you send
+is combined. Reports are merged into the data for the next release.
 
 ---
 
 ## Problems
 
-[Open an issue](https://github.com/Noie331/brotherhood-of-gold-trade-helper/issues/new) and include:
+Leave a comment on the addon's CurseForge page and include:
 
 - what you did, and what happened;
 - the text from `/bog probe`;
 - any Lua error text. Type `/console scriptErrors 1` to show Lua errors.
 
 ---
-
-Data credits: trainer, vendor, drop and quest data from cMaNGOS classic-db (GPL-3.0); some recipe sources from
-Warcraft Wiki (warcraft.wiki.gg, CC BY-SA 3.0).
 
 Licence: GPL-3.0 (see [LICENSE](LICENSE)).
