@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.1.11 - 2026-11-26
+
+New recipe sources (player reports, EG Link):
+
+- Centaur Hoofwarmers: sold by Gorhak, Molkar
+
 ## v0.1.10 - 2026-11-25
 
 - Data reports now include quest rewards: open a quest window (offered or handing in) and any recipe it gives that the addon does not know goes in your report.
